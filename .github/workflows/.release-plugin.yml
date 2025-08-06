@@ -1,0 +1,69 @@
+name: Release Plugin
+
+on:
+  push:
+    tags:
+      - '*'
+
+jobs:
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.TOKEN }}
+          submodules: recursive
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          tools: composer
+
+      - name: Get Composer Cache Directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+
+      - name: Cache Composer dependencies
+        uses: actions/cache@v3
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-composer-
+
+      - name: Install dependencies
+        run: composer install --no-dev --prefer-dist
+
+      - name: Create Plugin Directory and Move Files
+        run: |
+          rm -rf .git .github
+          rm .gitignore .gitmodules composer.json composer.lock README.md
+          mkdir sgw-plugin
+          shopt -s dotglob
+          mv * sgw-plugin/ || true
+
+      - name: Prepare Plugin Zip
+        run: |
+          zip -r sgw-plugin.zip sgw-plugin
+
+      - name: Create GitHub Release
+        id: create_release
+        uses: actions/create-release@v1.1.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          draft: false
+          prerelease: false
+
+      - name: Upload Release Asset
+        uses: softprops/action-gh-release@v1
+        with:
+          files: ./sgw-plugin.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.TOKEN }}

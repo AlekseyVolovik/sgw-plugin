@@ -1,9 +1,9 @@
 <?php return array(
     'root' => array(
         'name' => 'sgw-plugin/sgw-plugin',
-        'pretty_version' => 'v1.1.1',
-        'version' => '1.1.1.0',
-        'reference' => '2fb2b9617f385f11aec6a9a38ef69d289fdc0fb7',
+        'pretty_version' => 'dev-main',
+        'version' => 'dev-main',
+        'reference' => 'd147f9b93933f788299e0542cb334b297a43b997',
         'type' => 'library',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
@@ -29,9 +29,9 @@
             'dev_requirement' => false,
         ),
         'sgw-plugin/sgw-plugin' => array(
-            'pretty_version' => 'v1.1.1',
-            'version' => '1.1.1.0',
-            'reference' => '2fb2b9617f385f11aec6a9a38ef69d289fdc0fb7',
+            'pretty_version' => 'dev-main',
+            'version' => 'dev-main',
+            'reference' => 'd147f9b93933f788299e0542cb334b297a43b997',
             'type' => 'library',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),
