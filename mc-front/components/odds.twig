@@ -1,0 +1,23 @@
+<div class="ks-odds">
+    {% if odds.title %}
+        <p class="ks-odds__title">{{ odds.title }}</p>
+    {% endif %}
+    {% if odds.btns %}
+        <div class="ks-odds__buttons">
+            {% for btn in odds.btns %}
+                {% if btn.team and btn.score %}
+                    <div class="ks-odds__button">
+                        <p class="ks-odds__team">{{ btn.team }}</p>
+                        <p class="ks-odds__score">{{ btn.score }}</p>
+                    </div>
+                {% endif %}
+            {% endfor %}
+        </div>
+    {% endif %}
+    {% if odds.button %}
+        <button class="ks-button ks-odds__button-main">{{ odds.button }}</button>
+    {% endif %}
+    {% if odds.description %}
+        <p class="ks-odds__description">{{ odds.description }}</p>
+    {% endif %}
+</div>

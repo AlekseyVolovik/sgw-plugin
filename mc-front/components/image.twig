@@ -1,0 +1,17 @@
+{% if not image.src and image matches '/^\\d+$/' %}
+    {% if fetchpriority %}
+        {% set image_attr = {
+            "class": class,
+            'loading': loading is not same as(false) and loading is not same as('false') ? loading|default('lazy') : '',
+            'fetchpriority': fetchpriority
+        } %}
+    {% else %}
+        {% set image_attr = {
+            "class": class,
+            'loading': loading is not same as(false) and loading is not same as('false') ? loading|default('lazy') : '',
+        } %}
+    {% endif %}
+    {{ get_attachment_image(image, size|default('full'), image_attr)|raw }}
+{% else %}
+    <img src="{{ image.src }}" alt="{{ image.alt }}" class="{{ class }}" loading="{{ loading|default('lazy') }}">
+{% endif %}

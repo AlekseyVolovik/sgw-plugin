@@ -1,0 +1,71 @@
+<div class="sgw-catalog">
+    <div class="sgw-catalog__sidebar">
+    	{% include '@blocks/pinned-leagues/pinned-leagues.twig' %}
+
+        {% include '@blocks/filter/leagues-by-country.twig' with {
+            'filters_leagues_by_country': filters_leagues_by_country
+        } %}
+    </div>
+
+    <div class="sgw-catalog__content">
+        <div class="sgw-catalog__filters">
+            <div class="sgw-filters__filter-status">
+                <ul class="sgw-filters__status-list">
+                    <li class="sgw-filters__status-item sgw-filters__status-item--{{ 'live' }}{% if active_status == 'live' %} sgw-filters__status-item--active{% endif %} sgw-filters__status-item--live">
+                        <button class="sgw-filters__status-link tab-btn" data-status="live" type="button">Live</button>
+                    </li>
+                    <li class="sgw-filters__status-item sgw-filters__status-item--{{ 'upcoming' }}{% if active_status == 'upcoming' %} sgw-filters__status-item--active{% endif %}">
+                        <button class="sgw-filters__status-link tab-btn" data-status="upcoming" type="button">Upcoming</button>
+                    </li>
+                    <li class="sgw-filters__status-item sgw-filters__status-item--{{ 'finished' }}{% if active_status == 'finished' %} sgw-filters__status-item--active{% endif %}">
+                        <button class="sgw-filters__status-link tab-btn" data-status="finished" type="button">Finished</button>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <h2>{{ countrySlug|capitalize }}</h2>
+
+        <div class="sgw-catalog__events">
+            {% for status, match_cards in match_cards_by_status %}
+                <div class="sgw-catalog__events-item match-group" data-status="{{ status }}" style="{% if status != active_status %}display:none{% endif %}">
+                    {% if match_cards is not empty %}
+                        {% include '@blocks/match-cards/view.twig' with { 'match_cards': match_cards } %}
+                    {% else %}
+                        {% include '@components/no-matches.twig' with {
+                            no_matches_card: {
+                                title: "No matches available",
+                                subtitle: "Please check back later or choose another tab."
+                            }
+                        } %}
+                    {% endif %}
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<script>
+    const tabButtons = document.querySelectorAll('.tab-btn');
+    const groups = document.querySelectorAll('.match-group');
+
+    tabButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const status = btn.getAttribute('data-status');
+
+            // Удаляем активный класс со всех <li>
+            document.querySelectorAll('.sgw-filters__status-item').forEach(li => {
+                li.classList.remove('sgw-filters__status-item--active');
+            });
+
+            // Добавляем активный класс на <li>, в котором находится нажатая кнопка
+            const li = btn.closest('.sgw-filters__status-item');
+            if (li) li.classList.add('sgw-filters__status-item--active');
+
+            // Показ/скрытие соответствующих блоков матчей
+            groups.forEach(group => {
+                group.style.display = group.getAttribute('data-status') === status ? 'block' : 'none';
+            });
+        });
+    });
+</script>

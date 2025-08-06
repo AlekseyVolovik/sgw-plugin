@@ -1,0 +1,14 @@
+<footer class="footer">
+    <div class="footer__container">
+        <a class="footer__contacts-logo" href="#">
+            {% include '@components/image.twig' with {
+                'image': logo,
+            } %}
+        </a>
+        {% if copyright %}
+            <p class="footer__copyright">
+                {{ copyright }}
+            </p>
+        {% endif %}
+    </div>
+</footer>

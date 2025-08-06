@@ -1,0 +1,9 @@
+{% include '@parts/header/view.twig' with get_json_data('parts/header/data.json') %}
+
+<main>
+  {% block content %}
+    Sorry, no content
+  {% endblock %}
+</main>
+
+{% include '@parts/footer/view.twig' with get_json_data('parts/footer/data.json') %}

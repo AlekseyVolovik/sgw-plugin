@@ -1,0 +1,13 @@
+{% if filters_days %}
+    <div class="sgw-filters__filter-days">
+        <ul class="sgw-filters__days-list">
+            {% for filter in filters_days %}
+                <li class="sgw-filters__days-item {% if filter.state == 'active' %}sgw-filters__days-item--active{% endif %}">
+                    <a href="{{ filter.url }}" class="sgw-filters__days-link">
+                        {{ filter.title }}
+                    </a>
+                </li>
+            {% endfor %}
+        </ul>
+    </div>
+{% endif %}

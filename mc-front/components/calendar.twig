@@ -1,0 +1,44 @@
+<div class="sgw-calendar-dropdown" data-dropdown>
+	<div class="sgw-calendar-dropdown__toggle" data-dropdown-toggle>
+		{% if calendar|length > 0 %}
+			<img src="{{ calendar[0].icon }}" alt="Calendar Icon" class="sgw-calendar-dropdown__icon" />
+		{% endif %}
+		<span class="sgw-calendar-dropdown__label">
+			{% for item in calendar %}
+				{% if item.active %}
+					{{ item.date }} {{ item.month }} ({{ item.day }})
+				{% endif %}
+			{% endfor %}
+		</span>
+	</div>
+
+	<ul class="sgw-calendar-dropdown__menu" data-dropdown-menu>
+		{% for item in calendar %}
+			<li class="sgw-calendar-dropdown__item {% if item.active %}is-active{% endif %}">
+				<a href="{{ item.url }}">{{ item.date }} {{ item.month }} ({{ item.day }})</a>
+			</li>
+		{% endfor %}
+	</ul>
+</div>
+
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+	document.querySelectorAll("[data-dropdown]").forEach(dropdown => {
+		const toggle = dropdown.querySelector("[data-dropdown-toggle]");
+		const menu = dropdown.querySelector("[data-dropdown-menu]");
+
+		if (!toggle || !menu) return;
+
+		toggle.addEventListener("click", () => {
+			menu.style.display = menu.style.display === "block" ? "none" : "block";
+		});
+
+		document.addEventListener("click", e => {
+			if (!dropdown.contains(e.target)) {
+				menu.style.display = "none";
+			}
+		});
+	});
+});
+</script>

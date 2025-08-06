@@ -1,0 +1,43 @@
+<div class="sgw-match-card">
+    {% if match_card.title or match_card.badge %}
+        <div class="sgw-match-card__status">
+            {% if match_card.badge %}
+                <span class="sgw-badge sgw-badge_{{ match_card.badge | lower }}">{{ match_card.badge }}</span>
+            {% endif %}
+        </div>
+    {% endif %}
+    {% if match_card.teams or match_card.date and match_card.time %}
+        <div class="sgw-match-card__teams-wrapper">
+            {% if match_card.teams %}
+                <div class="sgw-match-card__teams">
+                    <div class="sgw-match-card__team sgw-match-card__team--left">
+                        {% if match_card.teams[0].logo %}
+                            <img src="{{ match_card.teams[0].logo }}" alt="{{ match_card.teams[0].name }}" class="sgw-team__logo">
+                        {% endif %}
+                        <span class="sgw-team__name">{{ match_card.teams[0].name }}</span>
+                    </div>
+
+                    <div class="sgw-match-card__score-block">
+                        {% if match_card.teams[0].score is defined and match_card.teams[1].score is defined %}
+                            <span class="sgw-match-card__score">{{ match_card.teams[0].score }} - {{ match_card.teams[1].score }}</span>
+                        {% elseif match_card.time %}
+                            <span class="sgw-match-card__time">{{ match_card.time }}</span>
+                        {% endif %}
+                    </div>
+
+                    <div class="sgw-match-card__team sgw-match-card__team--right">
+                        {% if match_card.teams[1].logo %}
+                            <img src="{{ match_card.teams[1].logo }}" alt="{{ match_card.teams[1].name }}" class="sgw-team__logo">
+                        {% endif %}
+                        <span class="sgw-team__name">{{ match_card.teams[1].name }}</span>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    {% endif %}
+    <div class="sgw-match-card__schedule">
+        {% if match_card.date_atr and match_card.time_atr %}       
+            <time datetime="{{ match_card.date_atr }}" class="sgw-schedule__time">{{ match_card.time_atr }}</time>      
+        {% endif %}
+    </div>
+</div>

@@ -1,0 +1,5 @@
+{% include '@components/status-filters.twig' %}
+{% include '@components/day-filters.twig' %}
+{% if calendar is not empty %}
+    {% include '@components/calendar.twig' with { calendar: calendar } %}
+{% endif %}

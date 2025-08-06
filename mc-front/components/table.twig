@@ -1,0 +1,24 @@
+<div class="ks-table{% if tables|length > 1 %} ks-table_halved{% endif %} horizontal-wrapper">
+    {% for table in tables %}
+        <table class="ks-table__table{% if view_class is defined %} ks-table__table_{{ view_class }}{% endif %}">
+            {% for row in table.content %}
+                <tr>
+                    <td>
+                        {% if row.logo %}
+                            <img src="{{ row.logo }}" alt="{{ row.name }}">
+                        {% endif %}
+                        {% if row.title %}
+                            <p>{{ row.title }}</p>
+                        {% endif %}
+                        {% if row.subtitle %}
+                            <p>{{ row.subtitle }}</p>
+                        {% endif %}
+                    </td>
+                    {% for item in row.values %}
+                        <td>{{ item }}</td>
+                    {% endfor %}
+                </tr>
+            {% endfor %}
+        </table>
+    {% endfor %}
+</div>

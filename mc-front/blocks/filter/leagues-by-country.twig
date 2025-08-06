@@ -1,0 +1,42 @@
+{% if filters_leagues_by_country %}
+    <div class="sgw-filters__filter-countries">
+        {% for country, leagues in filters_leagues_by_country %}
+            <div class="sgw-filters__country js-country">
+                <div class="sgw-filter__country-details js-country-toggle">
+                    <div class="sgw-filter__country-title">
+                        {{ country|capitalize }}
+                    </div>
+                    <ul class="sgw-filter__leagues js-league-list">
+                        {% for league in leagues %}
+                            <li class="sgw-filter__league-item">
+                                <a class="sgw-filter__league-link" href="{{ league.url }}">{{ league.title }}</a>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+{% endif %}
+
+<script>
+document.querySelectorAll('.js-country-toggle').forEach(toggle => {
+	const title = toggle.querySelector('.sgw-filter__country-title');
+	const leagueList = toggle.querySelector('.js-league-list');
+
+	// свернуто по умолчанию
+	leagueList.style.display = 'none';
+
+	title.addEventListener('click', () => {
+		const isOpen = leagueList.style.display === 'block';
+		leagueList.style.display = isOpen ? 'none' : 'block';
+
+		// стрелка поворачивается как в оригинальных стилях
+		if (isOpen) {
+			title.classList.remove('open');
+		} else {
+			title.classList.add('open');
+		}
+	});
+});
+</script>

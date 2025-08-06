@@ -1,0 +1,11 @@
+<div class="sgw-no-matches">
+    <div class="sgw-no-matches__info">
+        <div class="sgw-no-matches__icon">⚽</div>
+        {% if no_matches_card.title %}
+            <h2 class="sgw-no-matches__title">{{ no_matches_card.title }}</h2>
+        {% endif %}
+        {% if no_matches_card.subtitle %}
+            <p class="sgw-no-matches__subtitle">{{ no_matches_card.subtitle }}</p>
+        {% endif %}
+    </div>
+</div>

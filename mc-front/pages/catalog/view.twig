@@ -1,0 +1,68 @@
+<div class="sgw-catalog">
+	<div class="sgw-catalog__sidebar">
+		{% include '@blocks/pinned-leagues/pinned-leagues.twig' %}
+
+		{% include '@blocks/filter/leagues-by-country.twig' with {
+			'filters_leagues_by_country': filters.leagues_by_country
+		} %}
+	</div>
+	<div class="sgw-catalog__content">
+		{% if filters %}
+			<div class="sgw-catalog__filters">
+				{% include '@blocks/filter/view.twig' with {
+					'filters_status': filters.status,					
+					'filters_days': filters.days,
+					'calendar': filters.calendar,
+				} %}
+			</div>
+		{% endif %}
+
+		{% if events %}
+			<div class="sgw-catalog__events">
+				{% for event in events %}
+					<div class="sgw-catalog__events-item is-open">
+						<div class="sgw-catalog__events-item-title-wrapper">
+							<div class="sgw-catalog__events-item-title">
+								<span class="event-title-league">{{ event.title_country_league }}</span>
+								<span class="event-title-date">{{ event.title_date }}</span>
+							</div>
+							<button class="sgw-catalog__events-toggle is-active" type="button" aria-label="Toggle matches">
+								<svg class="sgw-toggle-icon" width="16" height="16" viewBox="0 0 24 24">
+									<path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2"/>
+								</svg>
+							</button>
+						</div>
+						<div class="sgw-catalog__events-matchlist" style="display: block;">
+							{% include '@blocks/match-cards/view.twig' with {
+								'match_cards': event.match_cards
+							} %}
+						</div>
+					</div>
+				{% endfor %}
+			</div>
+		{% else %}
+			{% include '@components/no-matches.twig' with { no_matches_card: no_matches_card } %}
+		{% endif %}
+	</div>
+</div>
+
+<script>
+    document.querySelectorAll('.sgw-catalog__events-toggle').forEach(toggle => {
+        toggle.addEventListener('click', () => {
+            const item = toggle.closest('.sgw-catalog__events-item');
+            const matchList = item.querySelector('.sgw-catalog__events-matchlist');
+
+            const isOpen = item.classList.contains('is-open');
+
+            if (isOpen) {
+                matchList.style.display = 'none';
+                item.classList.remove('is-open');
+                toggle.classList.remove('is-active');
+            } else {
+                matchList.style.display = 'block';
+                item.classList.add('is-open');
+                toggle.classList.add('is-active');
+            }
+        });
+    });
+</script>
