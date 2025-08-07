@@ -41,7 +41,7 @@ jobs:
       - name: Create Plugin Directory and Move Files
         run: |
           rm -rf .git .github
-          rm .gitignore .gitmodules composer.json composer.lock README.md
+          rm -f .gitignore .gitmodules composer.json composer.lock README.md
           mkdir sgw-plugin
           shopt -s dotglob
           mv * sgw-plugin/ || true
