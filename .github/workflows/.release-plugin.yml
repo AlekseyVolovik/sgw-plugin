@@ -53,17 +53,15 @@ jobs:
       - name: Create GitHub Release
         id: create_release
         uses: actions/create-release@v1.1.0
-        env:
-          GITHUB_TOKEN: ${{ secrets.TOKEN }}
         with:
           tag_name: ${{ github.ref }}
           release_name: Release ${{ github.ref }}
           draft: false
           prerelease: false
+          token: ${{ github.token }}
 
       - name: Upload Release Asset
         uses: softprops/action-gh-release@v1
         with:
           files: ./sgw-plugin.zip
-        env:
-          GITHUB_TOKEN: ${{ secrets.TOKEN }}
+          token: ${{ github.token }}
