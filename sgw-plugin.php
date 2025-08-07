@@ -121,4 +121,12 @@ final class SGWPlugin
 
 require_once __DIR__ . '/shortcodes/CatalogShortcode.php';
 
+use YahnisElsts\PluginUpdateChecker\v5\PucFactory;
+require_once __DIR__ . '/vendor/autoload.php';
+$updateChecker = PucFactory::buildUpdateChecker(
+    'https://github.com/AlekseyVolovik/sgw-plugin',
+    __FILE__,
+    'sgw-plugin'
+);
+
 new SGWPlugin();
