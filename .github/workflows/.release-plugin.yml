@@ -50,18 +50,12 @@ jobs:
         run: |
           zip -r sgw-plugin.zip sgw-plugin
 
-      - name: Create GitHub Release
-        id: create_release
-        uses: actions/create-release@v1.1.0
-        with:
-          tag_name: ${{ github.ref }}
-          release_name: Release ${{ github.ref }}
-          draft: false
-          prerelease: false
-          token: ${{ github.token }}
-
-      - name: Upload Release Asset
+      - name: Release plugin with ZIP
         uses: softprops/action-gh-release@v1
         with:
+          tag_name: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
           files: ./sgw-plugin.zip
+          draft: false
+          prerelease: false
           token: ${{ github.token }}
