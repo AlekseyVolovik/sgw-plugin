@@ -6,6 +6,7 @@
 			'filters_leagues_by_country': filters.leagues_by_country
 		} %}
 	</div>
+	<div class="sgw-sidebar-overlay" aria-hidden="true"></div>
 	<div class="sgw-catalog__content">
 		{% if filters %}
 			<div class="sgw-catalog__filters">
@@ -14,6 +15,9 @@
 					'filters_days': filters.days,
 					'calendar': filters.calendar,
 				} %}
+				<button class="sgw-sidebar-toggle" type="button" aria-label="Open leagues">
+					<span></span>
+				</button>
 			</div>
 		{% endif %}
 
@@ -66,3 +70,40 @@
         });
     });
 </script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const body = document.body;
+  const btn  = document.querySelector('.sgw-sidebar-toggle');
+  const sidebar = document.querySelector('.sgw-catalog__sidebar');
+  const overlay = document.querySelector('.sgw-sidebar-overlay');
+
+  const open = () => body.classList.add('sgw-sidebar-open');
+  const close = () => body.classList.remove('sgw-sidebar-open');
+  const isOpen = () => body.classList.contains('sgw-sidebar-open');
+
+  if (btn) btn.addEventListener('click', () => isOpen() ? close() : open());
+  if (overlay) overlay.addEventListener('click', close);
+
+  // Клик вне сайдбара закрывает его
+  document.addEventListener('click', (e) => {
+    if (!isOpen()) return;
+    const clickInsideSidebar = sidebar && sidebar.contains(e.target);
+    const clickOnToggle = btn && btn.contains(e.target);
+    if (!clickInsideSidebar && !clickOnToggle) close();
+  });
+
+  // Закрыть по Esc
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && isOpen()) close();
+  });
+
+  // Клик по ссылке внутри сайдбара — закрыть
+  if (sidebar) {
+    sidebar.addEventListener('click', (e) => {
+      const a = e.target.closest('a');
+      if (a) close();
+    });
+  }
+});
+</script>
+

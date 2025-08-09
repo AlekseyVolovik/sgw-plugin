@@ -2,10 +2,20 @@
     {% if match_card.title or match_card.badge %}
         <div class="sgw-match-card__status">
             {% if match_card.badge %}
-                <span class="sgw-badge sgw-badge_{{ match_card.badge | lower }}">{{ match_card.badge }}</span>
+                <span class="sgw-badge sgw-badge_{{ match_card.badge | lower }}">
+                    {% if match_card.badge|lower == 'live' %}
+                        <span class="badge-icon" aria-hidden="true">🔴</span>
+                    {% elseif match_card.badge|lower == 'upcoming' %}
+                        <span class="badge-icon" aria-hidden="true">📅</span>
+                    {% elseif match_card.badge|lower == 'finished' %}
+                        <span class="badge-icon" aria-hidden="true">🏁</span>
+                    {% endif %}
+                    <span class="badge-text">{{ match_card.badge }}</span>
+                </span>
             {% endif %}
         </div>
     {% endif %}
+
     {% if match_card.teams or match_card.date and match_card.time %}
         <div class="sgw-match-card__teams-wrapper">
             {% if match_card.teams %}

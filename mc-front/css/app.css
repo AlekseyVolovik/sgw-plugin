@@ -102,6 +102,12 @@ p{
   margin-bottom: 20px;
   flex-wrap: wrap;
 }
+.sgw-sidebar-burger {
+	display: none;
+	background: none;
+	border: none;
+	cursor: pointer;
+}
 /*  */
 
 /* Calendar */
@@ -474,6 +480,9 @@ p{
   color: #FFF;
   text-align: center;
 }
+.badge-icon {
+  display: none;
+}
 .sgw-badge.sgw-badge_upcoming{
   background-color: #1893C1;
 }
@@ -546,10 +555,52 @@ p{
 }
 /*  */
 
-@media(max-width: 767px){
-  .sgw-catalog__sidebar{
-    display: none;
+/* Burger filters */
+.sgw-catalog__filters{ position: relative; }
+.sgw-sidebar-toggle {
+  display: none;
+  position: relative;
+  width: 40px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+}
+.sgw-sidebar-toggle span,
+.sgw-sidebar-toggle::before,
+.sgw-sidebar-toggle::after {
+  content: '';
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  height: 3px;
+  background: #fff;
+  border-radius: 2px;
+  transition: 0.3s ease;
+}
+.sgw-sidebar-toggle::before {
+  top: 8px;
+}
+.sgw-sidebar-toggle span {
+  top: 14px;
+}
+.sgw-sidebar-toggle::after {
+  top: 20px;
+}
+.sgw-sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:999}
+/*  */
+
+@media(max-width: 1024px){
+  .sgw-sidebar-toggle {
+    display: block;
   }
+  .sgw-catalog__sidebar{
+    position:fixed;top:0;left:-100%;width:280px;height:100%;
+    background:#101229;z-index:1000;overflow-y:auto;transition:left .3s ease;
+    box-shadow: 8px 0 24px rgba(0,0,0,.25);
+  }
+  body.sgw-sidebar-open .sgw-catalog__sidebar{left:0}
+  body.sgw-sidebar-open .sgw-sidebar-overlay{ display:block; }
   #post-sgw-catalog{
     padding-left: 0;
     padding-right: 0;
@@ -558,10 +609,29 @@ p{
     padding-left: 0;
     padding-right: 0;
   }
+  .sgw-match-card__teams{
+    gap: 6px;
+  }
   .sgw-badge{
     white-space: nowrap;
+    display: flex;
+    background-color: initial !important;
   }
   .sgw-catalog__filters{
     justify-content: center;
+  }
+  .sgw-calendar-dropdown{
+    margin-left: initial;
+  }
+  .badge-text {
+    display: none;
+  }
+  .badge-icon {
+    display: block;
+  }
+}
+@media(max-width: 425px){
+  .sgw-team__name{
+    overflow-wrap: anywhere;
   }
 }
