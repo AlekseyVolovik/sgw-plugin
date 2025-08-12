@@ -601,7 +601,7 @@ p{
   }
   body.sgw-sidebar-open .sgw-catalog__sidebar{left:0}
   body.sgw-sidebar-open .sgw-sidebar-overlay{ display:block; }
-  #post-sgw-catalog{
+  .post-sgw-catalog{
     padding-left: 0;
     padding-right: 0;
   }
@@ -619,6 +619,10 @@ p{
   }
   .sgw-catalog__filters{
     justify-content: center;
+  }
+  .sgw-catalog__title{
+    font-size: 26px;
+    line-height: 1.2;
   }
   .sgw-calendar-dropdown{
     margin-left: initial;
