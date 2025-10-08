@@ -11,7 +11,7 @@ if (!defined("ABSPATH")) die;
 /**
  * Plugin Name:       SGW Plugin
  * Description:       Sportsgateway Plugin
- * Version:           1.1.4
+ * Version:           1.1.5
  * Author:            AM
  * Text Domain:       sgw-plugin
  * Domain Path:       /languages
@@ -121,7 +121,6 @@ final class SGWPlugin
 
 require_once __DIR__ . '/shortcodes/CatalogShortcode.php';
 
-// Для обновления плагина
 use YahnisElsts\PluginUpdateChecker\v5\PucFactory;
 require_once __DIR__ . '/vendor/autoload.php';
 $updateChecker = PucFactory::buildUpdateChecker(
@@ -129,6 +128,5 @@ $updateChecker = PucFactory::buildUpdateChecker(
     __FILE__,
     'sgw-plugin'
 );
-$updateChecker->getVcsApi()->enableReleaseAssets();
 
 new SGWPlugin();

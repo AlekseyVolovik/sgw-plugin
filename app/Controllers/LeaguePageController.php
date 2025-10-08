@@ -16,6 +16,10 @@ class LeaguePageController
     private ?string $leagueSlug;
     private ?string $countrySlug;
 
+    private ?string $status = null;
+    private ?string $date   = null;
+
+
     public function __construct(array $params)
     {
         $this->sgw = SGWClient::getInstance();
@@ -23,6 +27,29 @@ class LeaguePageController
         $this->sport = Fields::get_general_sport();
         $this->leagueSlug = $params['league'] ?? null;
         $this->countrySlug = $params['country'] ?? null;
+
+        $this->status = $params['status'] ?? null; // 'live'|'upcoming'|'finished'|null
+        $this->date   = $params['date']   ?? null; // 'YYYY-mm-dd' или null
+    }
+
+    private function buildBreadcrumbs(array $league): array
+    {
+        // Названия
+        $leagueName  = $league['name'] ?? null;
+        // Человекочитаемое имя страны из slug
+        $countryName = $league['urlSegments'][0] ?? $this->countrySlug ?? '';
+        $countryName = ucwords(str_replace('-', ' ', (string)$countryName));
+
+        // Ссылки
+        $countrySlug = $league['urlSegments'][0] ?? $this->countrySlug ?? null;
+
+        $items = [
+            ['label' => 'Football',   'url' => '/football/'],
+            ['label' => $countryName, 'url' => $countrySlug ? "/football/{$countrySlug}/" : null],
+            ['label' => $leagueName,  'url' => null], // финальная крошка без ссылки
+        ];
+
+        return $items;
     }
 
     private function getLeagueData(): ?array
@@ -46,45 +73,43 @@ class LeaguePageController
         return null;
     }
 
-
     private function getLeagueEvents(int $competitionId): array
     {
-        if (!$this->projectId || !$this->sport) return [];
+        if (!$this->projectId || !$this->sport) return ['live'=>[], 'upcoming'=>[], 'finished'=>[]];
 
-        $grouped = [
-            'live' => [],
-            'upcoming' => [],
-            'finished' => [],
+        // Базовые билдеры параметров
+        $buildParams = function(string $mode) use ($competitionId): array {
+            $p = ['competitionId' => $competitionId];
+            if ($mode === 'live') {
+                $p['status'] = 'live';
+            } elseif ($mode === 'upcoming') {
+                $p['period'] = 'upcoming';
+                if (!empty($this->date)) $p['fromDate'] = $p['toDate'] = $this->date;
+            } elseif ($mode === 'finished') {
+                $p['period'] = 'finished';
+                if (!empty($this->date)) $p['fromDate'] = $p['toDate'] = $this->date;
+            }
+            return $p;
+        };
+
+        $fetch = function(array $params): array {
+            $r = $this->sgw->api->matchcentre->getMatchCentreEvents($this->projectId, $this->sport, $params);
+            return (!empty($r['success']) && !empty($r['data']['data'])) ? $r['data']['data'] : [];
+        };
+
+        $live     = $fetch($buildParams('live'));
+        $upcoming = $fetch($buildParams('upcoming'));
+        $finished = $fetch($buildParams('finished'));
+
+        // Единая сортировка
+        usort($upcoming, fn($a,$b) => strcmp($a['date'] ?? '', $b['date'] ?? ''));           // ASC
+        usort($finished, fn($a,$b) => strcmp($b['date'] ?? '', $a['date'] ?? ''));           // DESC
+
+        return [
+            'live'     => $live,
+            'upcoming' => $upcoming,
+            'finished' => $finished,
         ];
-
-        // LIVE матчи
-        $live = $this->sgw->api->matchcentre->getMatchCentreEvents($this->projectId, $this->sport, [
-            'status' => 'live',
-            'competitionId' => $competitionId
-        ]);
-        if (!empty($live['success']) && !empty($live['data']['data'])) {
-            $grouped['live'] = $live['data']['data'];
-        }
-
-        // UPCOMING матчи
-        $upcoming = $this->sgw->api->matchcentre->getMatchCentreEvents($this->projectId, $this->sport, [
-            'period' => 'upcoming',
-            'competitionId' => $competitionId
-        ]);
-        if (!empty($upcoming['success']) && !empty($upcoming['data']['data'])) {
-            $grouped['upcoming'] = $upcoming['data']['data'];
-        }
-
-        // FINISHED матчи
-        $finished = $this->sgw->api->matchcentre->getMatchCentreEvents($this->projectId, $this->sport, [
-            'period' => 'finished',
-            'competitionId' => $competitionId
-        ]);
-        if (!empty($finished['success']) && !empty($finished['data']['data'])) {
-            $grouped['finished'] = $finished['data']['data'];
-        }
-
-        return $grouped;
     }
 
     private function getGroupedLeaguesByCountry(): array
@@ -147,65 +172,20 @@ class LeaguePageController
 
     private function getEventCardContent(array $event, string $modify): array
     {
-        $card = [
-            'venues' => [],
-        ];
-
-        $card['title'] = $event['competition'] ?? '';
-
-        if ($modify === 'live') $card['badge'] = 'Live';
-        elseif ($modify === 'upcoming') $card['badge'] = 'Upcoming';
-        elseif ($modify === 'finished') $card['badge'] = 'Finished';
-
-        if (isset($event['date']) && in_array($modify, ['live', 'finished'])) {
-            $date = \SGWPlugin\Classes\Helpers::convertIsoDateTime($event['date']);
-            $card['venues'][] = [
-                'icon' => sprintf('url(%s/images/content/calendar.svg)', SGWPLUGIN_URL_FRONT),
-                'text' => ($modify === 'live' ? 'The match started at ' : 'The match was held on ') . \SGWPlugin\Classes\Helpers::convertTimeTo12hFormat($date['time']),
-            ];
+        if (empty($event['competitionId']) && !empty($event['competition']['id'])) {
+            $event['competitionId'] = (int)$event['competition']['id'];
         }
-
-        $defaultLogo = SGWPLUGIN_URL_FRONT . '/images/content/team-placeholder.png';
-
-        if (!empty($event['competitors'][0]) && !empty($event['competitors'][1])) {
-            $team1 = $event['competitors'][0];
-            $team2 = $event['competitors'][1];
-
-            $logo1 = \SGWPlugin\Classes\Helpers::getFlag($team1['abbreviation']) ?: $defaultLogo;
-            $logo2 = \SGWPlugin\Classes\Helpers::getFlag($team2['abbreviation']) ?: $defaultLogo;
-
-            $card['teams'] = [
-                [
-                    'name' => $team1['name'],
-                    'logo' => $logo1,
-                    'score' => in_array($modify, ['live', 'finished']) ? ($team1['score'] ?? '') : ''
-                ],
-                [
-                    'name' => $team2['name'],
-                    'logo' => $logo2,
-                    'score' => in_array($modify, ['live', 'finished']) ? ($team2['score'] ?? '') : ''
-                ]
-            ];
-        }
-
-        if (isset($event['date']) && $modify === 'upcoming') {
-            $date = \SGWPlugin\Classes\Helpers::convertIsoDateTime($event['date']);
-
-            $card['date_atr'] = $event['date'];
-            $card['date'] = date('M j, Y', strtotime($date['date']));
-            $card['time'] = \SGWPlugin\Classes\Helpers::convertTimeTo12hFormat($date['time']);
-        }
-
-        return $card;
+        return \SGWPlugin\Classes\MatchCardFactory::build($event, $modify);
     }
 
     private function transformEventsToMatchCards(array $events, string $modify): array
     {
-        $cards = [];
-        foreach ($events as $event) {
-            $cards[] = CatalogController::getEventCardContent($event, $modify); // static call or reuse
-        }
-        return $cards;
+        return array_map(function($e) use ($modify) {
+            if (empty($e['competitionId']) && !empty($e['competition']['id'])) {
+                $e['competitionId'] = (int)$e['competition']['id'];
+            }
+            return \SGWPlugin\Classes\MatchCardFactory::build($e, $modify);
+        }, $events);
     }
 
     public function render(): ?string
@@ -237,18 +217,26 @@ class LeaguePageController
         $events = $this->getLeagueEvents((int)$league['entityId']);
 
         $matchCardsByStatus = [
-            'live' => array_map(fn($e) => $this->getEventCardContent($e, 'live'), $events['live']),
-            'upcoming' => array_map(fn($e) => $this->getEventCardContent($e, 'upcoming'), $events['upcoming']),
-            'finished' => array_map(fn($e) => $this->getEventCardContent($e, 'finished'), $events['finished']),
+            'live'     => array_map(fn($e) => \SGWPlugin\Classes\MatchCardFactory::build($e, 'live'), $events['live']),
+            'upcoming' => array_map(fn($e) => \SGWPlugin\Classes\MatchCardFactory::build($e, 'upcoming'), $events['upcoming']),
+            'finished' => array_map(fn($e) => \SGWPlugin\Classes\MatchCardFactory::build($e, 'finished'), $events['finished']),
         ];
+
+        $active = $this->status ?: 'live';
+        if ($active === 'live' && empty($matchCardsByStatus['live'])) {
+            $active = !empty($matchCardsByStatus['upcoming']) ? 'upcoming' : 'finished';
+        }
+
+        $breadcrumbs = $this->buildBreadcrumbs($league);
 
         return Twig::render('pages/league/view.twig', [
             'countrySlug' => $this->countrySlug,
             'leagueName' => $league['name'],
             'filters_leagues_by_country' => $this->getGroupedLeaguesByCountry(),
             'match_cards_by_status' => $matchCardsByStatus,
-            'active_status' => 'live',
             'pinned_leagues' => $this->getPinnedLeagues(),
+            'active_status' => $active,
+            'breadcrumbs' => $breadcrumbs,
         ]);
     }
 }

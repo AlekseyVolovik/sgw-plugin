@@ -26,6 +26,11 @@ class Routing
         // Базовая страница: /football
         $this->addRoute("[$this->baseUrlCatalog:entry]", SGWPLUGIN_PATH_TEMPLATES . '/catalog.php');
 
+        // Тестовая страница: /football/test
+        $this->addRoute("[$this->baseUrlCatalog:entry]/test", SGWPLUGIN_PATH_TEMPLATES . '/test-events.php');
+
+        $this->addRoute("[$this->baseUrlCatalog:entry]/match/[:slug]", SGWPLUGIN_PATH_TEMPLATES . '/match-view.php');
+
         // Вкладки-периоды: /football/today, /football/yesterday, /football/tomorrow
         $this->addRoute("[$this->baseUrlCatalog:entry]/[today|tomorrow|yesterday:period]", SGWPLUGIN_PATH_TEMPLATES . '/catalog.php');
 

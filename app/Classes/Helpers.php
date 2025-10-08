@@ -137,4 +137,42 @@ class Helpers
         return include $file;
     }
 
+    public static function urlSlug(string $text): string
+    {
+        $s = trim($text);
+
+        // если уже слаг — просто привести к нижнему регистру и обрезать края
+        if (preg_match('/^[a-z0-9-]+$/i', $s)) {
+            return strtolower(trim($s, '-'));
+        }
+
+        // Транслитерация
+        if (class_exists('\Transliterator')) {
+            $tr = \Transliterator::create('Any-Latin; Latin-ASCII;');
+            if ($tr) $s = $tr->transliterate($s);
+        } elseif (function_exists('iconv')) {
+            $tmp = @iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $s);
+            if ($tmp !== false) $s = $tmp;
+        }
+
+        $s = strtolower($s);
+
+        // Нормализация символов
+        $s = strtr($s, [
+            '&'  => 'and',
+            '’'  => "'", '‘' => "'", '´' => "'",
+            '–'  => '-', '—' => '-', '−' => '-', '-' => '-', // разные тире → дефис
+            '_'  => '-', '/' => '-', '.' => ' ',            // точку/слэш заменим
+        ]);
+
+        // Апострофы просто убираем
+        $s = str_replace("'", '', $s);
+
+        // Всё не [a-z0-9-] → дефис
+        $s = preg_replace('/[^a-z0-9-]+/i', '-', $s);
+        // Схлопнуть дефисы
+        $s = preg_replace('/-+/', '-', $s);
+
+        return trim($s, '-');
+    }
 }

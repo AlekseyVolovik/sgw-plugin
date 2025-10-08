@@ -8,6 +8,23 @@
     </div>
 	<div class="sgw-sidebar-overlay" aria-hidden="true"></div>
     <div class="sgw-catalog__content">
+
+        {% if breadcrumbs %}
+            <nav class="sgw-breadcrumbs" aria-label="Breadcrumb">
+                <ol class="sgw-breadcrumbs__list">
+                    {% for it in breadcrumbs %}
+                    <li class="sgw-breadcrumbs__item">
+                        {% if it.url %}
+                        <a href="{{ it.url }}" class="sgw-breadcrumbs__link">{{ it.label }}</a>
+                        {% else %}
+                        <span class="sgw-breadcrumbs__current">{{ it.label }}</span>
+                        {% endif %}
+                    </li>
+                    {% endfor %}
+                </ol>
+            </nav>
+        {% endif %}
+
         <div class="sgw-catalog__filters">
             <div class="sgw-filters__filter-status">
                 <ul class="sgw-filters__status-list">

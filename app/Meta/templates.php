@@ -45,4 +45,8 @@ return [
         'title' => 'Upcoming Football Matches on {{date}} | Fixtures and Kick-off Times – {{site_name}}',
         'description' => 'See all upcoming football fixtures scheduled for {{date}}. Match times, teams, and full list of games – only on{{site_name}}.',
     ],
+    'match' => [
+        'title' => '{{team1}} vs {{team2}} – Match Preview, Kick-off & Stats | {{site_name}}',
+        'description' => 'Get full match info for {{team1}} vs {{team2}} on {{date}}: score, kick-off time, head-to-head stats, recent form, and more. Live updates on {{site_name}}.',
+    ],
 ];

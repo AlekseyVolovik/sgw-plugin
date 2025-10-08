@@ -523,55 +523,13 @@ class CatalogController
         return $result;
     }
 
-    private function getEventCardContent($event, $modify): array
+    private function getEventCardContent(array $event, string $modify): array
     {
-        if (!is_array($event) && empty($event) && empty($modify)) return [];
-
-        if ($modify === 'live') {
-            $card['badge'] = 'Live';
-        } else if ($modify === 'upcoming') {
-            $card['badge'] = 'Upcoming';
-        } else if ($modify === 'finished') {
-            $card['badge'] = 'Finished';
+        if (empty($event['competitionId']) && !empty($event['competition']['id'])) {
+            $event['competitionId'] = (int)$event['competition']['id'];
         }
 
-        if (isset($event['date']) && ($modify === 'live' || $modify === 'finished')) {
-            $date = Helpers::convertIsoDateTime($event['date']);
-        }
-
-        $defaultLogo = SGWPLUGIN_URL_FRONT . '/images/content/team-placeholder.png';
-
-        if (isset($event['competitors'][0]) && isset($event['competitors'][1])) {
-            $team1 = $event['competitors'][0];
-            $team2 = $event['competitors'][1];
-
-            $logo1 = Helpers::getFlag($team1['abbreviation']) ?: $defaultLogo;
-            $logo2 = Helpers::getFlag($team2['abbreviation']) ?: $defaultLogo;
-
-            $card['teams'] = [
-                [
-                    'name' => $team1['name'],
-                    'logo' => $logo1,
-                    'score' => ($modify === 'live' || $modify === 'finished') ? ($team1['score'] ?? '') : ''
-                ],
-                [
-                    'name' => $team2['name'],
-                    'logo' => $logo2,
-                    'score' => ($modify === 'live' || $modify === 'finished') ? ($team2['score'] ?? '') : ''
-                ]
-            ];
-        }
-
-        if (isset($event['date']) && $modify === 'upcoming') {
-            $date = Helpers::convertIsoDateTime($event['date']);
-
-            $card['date_atr'] = $event['date'];
-            $card['time_atr'] = (new \DateTime($event['date']))->format('H:i');
-            $card['date'] = date('M j, Y', strtotime($date['date']));
-            $card['time'] = Helpers::convertTimeTo12hFormat($date['time']);
-        }
-
-        return $card;
+        return \SGWPlugin\Classes\MatchCardFactory::build($event, $modify);
     }
 
     public function render(): null|string
