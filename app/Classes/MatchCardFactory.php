@@ -4,10 +4,6 @@ namespace SGWPlugin\Classes;
 
 class MatchCardFactory
 {
-    /**
-     * @param array  $event
-     * @param string $status 'live'|'upcoming'|'finished'
-     */
     public static function build(array $event, string $status): array
     {
         // подстраховка competitionId
@@ -21,7 +17,7 @@ class MatchCardFactory
             'url'   => MatchUrl::build($event),
         ];
 
-        // добавляем -c{cid} в URL при необходимости
+        // если в конце уже нет -c{cid}, добавим
         $cid = $event['competitionId'] ?? null;
         if (!empty($card['url']) && $cid) {
             if (!preg_match('~\-c\d+\/?$~', $card['url'])) {
@@ -52,23 +48,31 @@ class MatchCardFactory
             ];
         }
 
-        // === Единообразная дата/время для всех статусов ===
         if (!empty($event['date'])) {
             $iso = Helpers::convertIsoDateTime($event['date']); // ['date'=>'Y-m-d','time'=>'H:i:s']
 
-            $card['date_iso'] = $event['date'];
-            if (!empty($iso['date'])) {
-                $card['date'] = date('M j, Y', strtotime($iso['date']));
-            }
-            if (!empty($iso['time'])) {
-                $card['time'] = Helpers::convertTimeTo12hFormat($iso['time']);
-            }
+            if ($status === 'upcoming') {
+                // Показываем дату и время
+                $card['date_iso'] = $event['date'];
+                $card['date']     = date('M j, Y', strtotime($iso['date']));
+                $card['time']     = Helpers::convertTimeTo12hFormat($iso['time']);
 
-            // Фолбэк-строка, если где-то отображается meta_note
-            if ($status === 'live') {
-                $card['meta_note'] = 'Started at ' . ($card['time'] ?? '');
-            } elseif ($status === 'finished') {
-                $card['meta_note'] = 'Played on ' . ($card['time'] ?? '');
+            } elseif ($status === 'live') {
+                // Показываем минуту матча — берём только elapsed
+                $elapsed = $event['detailedStatus']['elapsed'] ?? ($event['elapsed'] ?? null);
+
+                if (is_numeric($elapsed)) {
+                    $card['live_minute'] = ((int)$elapsed) . "’";
+                } elseif (is_string($elapsed) && preg_match('/^\d+(?:\+\d+)?$/', $elapsed)) {
+                    // поддержка остановочного времени вида 45+2
+                    $card['live_minute'] = $elapsed . "’";
+                } else {
+                    $card['live_minute'] = 'Live';
+                }
+
+            } else { // finished
+                // Короткая подпись для завершённых
+                $card['meta_note'] = 'Played on ' . Helpers::convertTimeTo12hFormat($iso['time']);
             }
         }
 

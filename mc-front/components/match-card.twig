@@ -46,12 +46,23 @@
         </div>
     {% endif %}
     <div class="sgw-match-card__schedule">
-        {% if match_card.date or match_card.time %}
-            <time {% if match_card.date_iso %}datetime="{{ match_card.date_iso }}"{% endif %} class="sgw-schedule__time">
-            {{ match_card.date ? match_card.date ~ (match_card.time ? ' • ' : '') : '' }}{{ match_card.time ?? '' }}
+        {% if match_card.badge|lower == 'live' %}
+            {% set live = match_card.live_minute ?? 'Live' %}
+            {% set last = live|slice(-1) %}
+            {% set base = live|slice(0, live|length - 1) %}
+            {% if last in ["’","'"] %}
+            <span class="sgw-schedule__live" aria-label="Live minute">
+                {{ base }}<span class="sgw-blink" aria-hidden="true">{{ last }}</span>
+            </span>
+            {% else %}
+            <span class="sgw-schedule__live">{{ live }}</span>
+            {% endif %}
+        {% elseif match_card.date_iso %}
+            <time datetime="{{ match_card.date_iso }}" class="sgw-schedule__time">
+            {{ match_card.date }} • {{ match_card.time }}
             </time>
         {% elseif match_card.meta_note %}
-            <span class="sgw-schedule__time">{{ match_card.meta_note }}</span>
+            <span class="sgw-schedule__note">{{ match_card.meta_note }}</span>
         {% endif %}
     </div>
 </a>
