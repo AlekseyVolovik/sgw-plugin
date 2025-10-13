@@ -730,7 +730,7 @@ p{
 }
 
 /* --- Cards, layout & common --- */
-.sgw-card{border:1px solid #e5e7eb;border-radius:12px;padding:16px;margin:16px 0;background:#fff}
+.sgw-card{border:1px solid #e5e7eb;border-radius:12px;padding:16px;margin:16px 0;background:initial}
 .sgw-card__title{margin:0 0 12px 0;font-weight:700;font-size:24px}
 .sgw-empty{opacity:.7}
 .sgw-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
