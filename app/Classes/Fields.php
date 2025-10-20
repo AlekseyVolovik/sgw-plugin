@@ -68,4 +68,12 @@ class Fields
     {
         return self::get_options_field('sgw_plugin_updates_git_token') ?? '';
     }
+
+    public static function get_customize_pinned_league_ids(): array
+{
+    // имя формируется ACF автоматически: {group_name}_{subfield_name}
+    $ids = self::get_options_field('sgw_plugin_customize_pinned_league_ids');
+    return is_array($ids) ? array_values(array_map('intval', $ids)) : [];
+}
+
 }

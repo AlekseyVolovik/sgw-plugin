@@ -15,6 +15,7 @@ class Admin
     function __construct()
     {
         add_action('acf/init', [$this, 'addOptionsPage']);
+        add_action('acf/init', [$this, 'registerCustomizeChoicesFilter']);
         add_filter('acf/settings/save_json/key=group_6830864c1fde5', [$this, 'saveFields']);
         add_filter('acf/settings/load_json', [$this, 'loadFields']);
         add_action('admin_init', [$this, 'addMetaboxes']);
@@ -101,6 +102,58 @@ class Admin
     private function getMessage($status, $text): string
     {
         return sprintf('<span style="color: %s">%s</span>', $status ? 'green' : 'red', $text);
+    }
+
+    public function registerCustomizeChoicesFilter(): void
+    {
+        // когда ACF загрузился — подставляем варианты для поля pinned_league_ids
+        add_filter('acf/load_field/name=pinned_league_ids', [$this, 'loadPinnedLeagueChoices']);
+    }
+
+    /**
+     * Динамически подставляет список всех лиг в select "Pinned leagues".
+     * Источник: matchcentre->getMatchCentreCategories() (Competition).
+     */
+    public function loadPinnedLeagueChoices($field)
+    {
+        $cache_key = 'sgw_acf_competitions_choices';
+        $choices = get_transient($cache_key);
+
+        if ($choices === false) {
+            $choices = [];
+
+            $projectId = \SGWPlugin\Classes\Fields::get_general_project_id();
+            $sport     = \SGWPlugin\Classes\Fields::get_general_sport();
+
+            if ($projectId && $sport) {
+                try {
+                    $sgw = \SGWClient::getInstance();
+                    $res = $sgw->api->matchcentre->getMatchCentreCategories($projectId, $sport);
+
+                    foreach (($res['data'] ?? []) as $item) {
+                        if (($item['entityType'] ?? '') !== 'Competition') continue;
+
+                        $segments = $item['urlSegments'] ?? [];
+                        if (count($segments) < 2) continue;
+
+                        $id   = (int)($item['entityId'] ?? 0);
+                        if ($id <= 0) continue;
+
+                        $country = $segments[0];
+                        $name    = $item['name'] ?? '—';
+
+                        $choices[$id] = sprintf('%s — %s', $country, $name);
+                    }
+
+                    set_transient($cache_key, $choices, 10 * MINUTE_IN_SECONDS);
+                } catch (\Throwable $e) {
+                    // если API недоступно — поле останется пустым
+                }
+            }
+        }
+
+        $field['choices'] = $choices;
+        return $field;
     }
 }
 

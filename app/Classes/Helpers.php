@@ -132,9 +132,17 @@ class Helpers
     // Запиненные лиги в сайдбаре
     public static function getPinnedLeagueIds(): array
     {
+        // 1) сначала — из админки (ACF)
+        if (method_exists(\SGWPlugin\Classes\Fields::class, 'get_customize_pinned_league_ids')) {
+            $ids = \SGWPlugin\Classes\Fields::get_customize_pinned_league_ids();
+            if (!empty($ids)) return $ids;
+        }
+
+        // 2) Fallback на старый файл, чтобы не ломать прошлую логику
         $file = __DIR__ . '/../Config/pinned-leagues.php';
         if (!file_exists($file)) return [];
-        return include $file;
+        $arr = include $file;
+        return is_array($arr) ? array_values(array_map('intval', $arr)) : [];
     }
 
     public static function urlSlug(string $text): string

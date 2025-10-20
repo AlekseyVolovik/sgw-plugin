@@ -293,14 +293,6 @@
                     {{ team.coach ?? '—' }}
                   {% endif %}
                 </div>
-                <div class="sgw-lineups__colors">
-                  {% if team.colors.player %}
-                    <span class="sgw-swatch" style="background: {{ team.colors.player }}"></span> Player kit
-                  {% endif %}
-                  {% if team.colors.goalkeeper %}
-                    <span class="sgw-swatch" style="background: {{ team.colors.goalkeeper }}"></span> GK kit
-                  {% endif %}
-                </div>
               </div>
 
               {% if team.players is not empty %}
@@ -351,36 +343,6 @@
           <p class="sgw-empty">No head-to-head matches in the feed.</p>
         {% endif %}
       </div>
-    </div>
-
-    {# ----- TAB: FORM ----- #}
-    <div id="tab-form" class="sgw-tabpanel" role="tabpanel" aria-labelledby="tabbtn-form" hidden>
-      <div class="sgw-card">
-        <h3 class="sgw-card__title">Form (last 5 matches)</h3>
-        <table class="sgw-table sgw-form">
-          <thead>
-            <tr>
-              <th>#</th><th>Team</th><th>MP</th><th>W</th><th>D</th><th>L</th>
-              <th>G</th><th>GD</th><th>PTS</th><th>FORM</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for r in mc_form %}
-              <tr>
-                <td class="pos">{{ r.pos }}</td>
-                <td class="team">{{ r.teamName }}</td>
-                <td>{{ r.mp }}</td><td>{{ r.w }}</td><td>{{ r.d }}</td><td>{{ r.l }}</td>
-                <td>{{ r.g }}</td><td>{{ r.gd }}</td><td class="pts">{{ r.pts }}</td>
-                <td class="form">
-                  {% for f in r.form %}
-                    <span class="form-badge {{ f|lower }}">{{ f }}</span>
-                  {% endfor %}
-                </td>
-              </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
 
       <div class="sgw-card">
         <h3 class="sgw-card__title">Last matches — {{ prev_groups.t1.teamName }}</h3>
@@ -428,6 +390,36 @@
         {% else %}
           <p class="sgw-empty">No recent matches.</p>
         {% endif %}
+      </div>
+    </div>
+
+    {# ----- TAB: FORM ----- #}
+    <div id="tab-form" class="sgw-tabpanel" role="tabpanel" aria-labelledby="tabbtn-form" hidden>
+      <div class="sgw-card">
+        <h3 class="sgw-card__title">Form (last 5 matches)</h3>
+        <table class="sgw-table sgw-form">
+          <thead>
+            <tr>
+              <th>#</th><th>Team</th><th>MP</th><th>W</th><th>D</th><th>L</th>
+              <th>G</th><th>GD</th><th>PTS</th><th>FORM</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for r in mc_form %}
+              <tr>
+                <td class="pos">{{ r.pos }}</td>
+                <td class="team">{{ r.teamName }}</td>
+                <td>{{ r.mp }}</td><td>{{ r.w }}</td><td>{{ r.d }}</td><td>{{ r.l }}</td>
+                <td>{{ r.g }}</td><td>{{ r.gd }}</td><td class="pts">{{ r.pts }}</td>
+                <td class="form">
+                  {% for f in r.form %}
+                    <span class="form-badge {{ f|lower }}">{{ f }}</span>
+                  {% endfor %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
       </div>
     </div>
   </section>
