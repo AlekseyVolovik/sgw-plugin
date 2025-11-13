@@ -23,6 +23,11 @@ p{
   margin: 0;
 }
 /* Catalog */
+.post-sgw-catalog, .post-sgw-match{
+  margin-inline: auto;
+  width: min(100%, calc(90vw - 0px * 2));
+  max-width: 1290px;
+}
 .sgw-catalog {
 	display: flex;
 	flex-wrap: wrap;
