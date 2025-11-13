@@ -21,14 +21,8 @@ ThemeHeader::render([
 ]);
 ?>
 
-<div class="sgw-wrapper" data-prefix="single_match">
-    <div class="ct-container-full" data-content="normal">
-        <article class="post-sgw-match">
-            <div class="entry-content is-layout-constrained">
-                <?php echo $content; ?>
-            </div>
-        </article>
-    </div>
-</div>
+<section id="post-sgw-match" class="post-sgw-match">
+    <?php echo $content; ?>
+</section>
 
 <?php ThemeFooter::render(); ?>

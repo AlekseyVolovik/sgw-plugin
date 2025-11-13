@@ -21,14 +21,8 @@ ThemeHeader::render([
 ]);
 ?>
 
-<div class="sgw-wrapper" data-prefix="single_page">
-    <div class="ct-container-full" data-content="normal">
-        <article id="post-sgw-catalog" class="post-sgw-catalog page type-page status-publish hentry">
-            <div class="entry-content is-layout-constrained">
-                <?php echo $content; ?>
-            </div>
-        </article>
-    </div>
-</div>
+<section id="post-sgw-catalog" class="post-sgw-catalog">
+    <?php echo $content; ?>
+</section>
 
 <?php ThemeFooter::render(); ?>
