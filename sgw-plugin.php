@@ -11,7 +11,7 @@ if (!defined("ABSPATH")) die;
 /**
  * Plugin Name:       SGW Plugin
  * Description:       Sportsgateway Plugin
- * Version:           1.1.14
+ * Version:           1.1.15
  * Author:            AM
  * Text Domain:       sgw-plugin
  * Domain Path:       /languages

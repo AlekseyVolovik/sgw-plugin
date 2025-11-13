@@ -19,15 +19,19 @@ class CatalogShortcode
         wp_enqueue_style('sgw-plugin-styles', SGWPLUGIN_URL_FRONT . '/fonts/roboto/style.css');
 
         $atts = shortcode_atts([
-            'entry' => 'football',
+            'entry'  => 'football',
             'status' => null,
             'period' => null,
-            'date' => null,
+            'date'   => null,
         ], $atts);
 
-        $controller = new \SGWPlugin\Controllers\CatalogController($atts);
+        $controller = new CatalogController($atts);
+        $content    = $controller->render() ?? '';
 
-        return $controller->render() ?? '';
+        // Оборачиваем в требуемый section
+        return sprintf(
+            '<section id="post-sgw-catalog" class="post-sgw-catalog">%s</section>',
+            $content
+        );
     }
-
 }
