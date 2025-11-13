@@ -23,12 +23,6 @@ p{
   margin: 0;
 }
 /* Catalog */
-.post-sgw-catalog,
-.post-sgw-match{
-  margin-inline: auto;
-  width: min(100%, calc(90vw - 0px * 2));
-  max-width: 1290px;
-}
 .sgw-catalog {
 	display: flex;
 	flex-wrap: wrap;
@@ -261,6 +255,7 @@ p{
 	font-size: 14px;
 	cursor: pointer;
   text-align: center;
+  list-style: none;
 }
 .sgw-calendar-dropdown__item a {
 	color: #333;
@@ -334,6 +329,7 @@ p{
   text-transform: uppercase;
   color: #3D3D5C;
   cursor: pointer;
+  text-decoration: none;
 }
 .sgw-filters__status-item--active .sgw-filters__status-link{
   background: #52527A;
@@ -482,6 +478,7 @@ p{
   background: #FFFFFF;
   gap: 48px;
   border-bottom: 1px solid #E6E6E6;
+  text-decoration: none;
 }
 .sgw-match-card:hover{
   background-color: rgba(248, 248, 250, 1);
@@ -655,13 +652,13 @@ p{
 .sgw-match__team{display:flex;flex-direction:column;text-align:center}
 .sgw-match__team--home{
   align-items: end;
-  width: fit-content;
+  width: 100%;
   align-items: center;
   margin-left: auto;
 }
 .sgw-match__team--away{
   align-items: baseline;
-  width: fit-content;
+  width: 100%;
   align-items: center;
 }
 .sgw-match__logo{
@@ -812,6 +809,7 @@ p{
 /* --- Tables --- */
 table.sgw-table, .sgw-table th, .sgw-table td{
   border: none;
+  width: -webkit-fill-available;
 }
 .sgw-table th,
 .sgw-table td{
