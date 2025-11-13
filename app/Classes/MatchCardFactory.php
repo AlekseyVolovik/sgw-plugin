@@ -51,28 +51,32 @@ class MatchCardFactory
         if (!empty($event['date'])) {
             $iso = Helpers::convertIsoDateTime($event['date']); // ['date'=>'Y-m-d','time'=>'H:i:s']
 
-            if ($status === 'upcoming') {
-                // Показываем дату и время
-                $card['date_iso'] = $event['date'];
-                $card['date']     = date('M j, Y', strtotime($iso['date']));
-                $card['time']     = Helpers::convertTimeTo12hFormat($iso['time']);
+            // нормализуем время в 24ч формате HH:MM
+            $time24 = '';
+            if (!empty($iso['time'])) {
+                $ts = strtotime($iso['time']);
+                $time24 = $ts ? date('H:i', $ts) : substr($iso['time'], 0, 5);
+            }
 
-            } elseif ($status === 'live') {
-                // Показываем минуту матча — берём только elapsed
+            if ($status === 'live') {
+                // Показываем минуту матча
                 $elapsed = $event['detailedStatus']['elapsed'] ?? ($event['elapsed'] ?? null);
 
                 if (is_numeric($elapsed)) {
                     $card['live_minute'] = ((int)$elapsed) . "’";
                 } elseif (is_string($elapsed) && preg_match('/^\d+(?:\+\d+)?$/', $elapsed)) {
-                    // поддержка остановочного времени вида 45+2
                     $card['live_minute'] = $elapsed . "’";
                 } else {
                     $card['live_minute'] = 'Live';
                 }
 
+            } elseif ($status === 'upcoming') {
+                $card['date_iso'] = $event['date'];
+                $card['date'] = date('d/m', strtotime($iso['date']));
+                $card['time'] = date('H:i', strtotime($iso['time']));
             } else { // finished
-                // Короткая подпись для завершённых
-                $card['meta_note'] = 'Played on ' . Helpers::convertTimeTo12hFormat($iso['time']);
+                // Короткая подпись для завершённых: время в 24ч
+                $card['meta_note'] = $time24; // 15:22
             }
         }
 

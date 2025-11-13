@@ -193,50 +193,72 @@ class LeaguePageController
         $league = $this->getLeagueData();
         if (!$league) return "<div>League Not Found</div>";
 
-        // Установить title
+        // Title
         $titleTemplate = MetaBuilder::getTemplate('league', 'title');
         if ($titleTemplate) {
             $title = MetaBuilder::buildMeta($titleTemplate, [
-                'league' => $league['name'],
-                'site_name' => get_bloginfo('name')
+                'league'    => $league['name'],
+                'site_name' => get_bloginfo('name'),
             ]);
             MetaBuilder::setTitle($title);
         }
 
-        // Установить description
+        // Description
         $descTemplate = MetaBuilder::getTemplate('league', 'description');
         if ($descTemplate) {
             $description = MetaBuilder::buildMeta($descTemplate, [
-                'league' => $league['name'],
+                'league'    => $league['name'],
                 'site_name' => get_bloginfo('name'),
-                'country' => ucfirst($this->countrySlug)
+                'country'   => ucfirst($this->countrySlug),
             ]);
             MetaBuilder::setDescription($description);
         }
 
+        // Матчи по статусам
         $events = $this->getLeagueEvents((int)$league['entityId']);
 
         $matchCardsByStatus = [
-            'live'     => array_map(fn($e) => \SGWPlugin\Classes\MatchCardFactory::build($e, 'live'), $events['live']),
+            'live'     => array_map(fn($e) => \SGWPlugin\Classes\MatchCardFactory::build($e, 'live'),     $events['live']),
             'upcoming' => array_map(fn($e) => \SGWPlugin\Classes\MatchCardFactory::build($e, 'upcoming'), $events['upcoming']),
             'finished' => array_map(fn($e) => \SGWPlugin\Classes\MatchCardFactory::build($e, 'finished'), $events['finished']),
         ];
 
+        // Активный таб
         $active = $this->status ?: 'live';
         if ($active === 'live' && empty($matchCardsByStatus['live'])) {
             $active = !empty($matchCardsByStatus['upcoming']) ? 'upcoming' : 'finished';
         }
 
-        $breadcrumbs = $this->buildBreadcrumbs($league);
+        $breadcrumbs     = $this->buildBreadcrumbs($league);
+        $bcArrowIcon     = sprintf('%s/images/content/arrow-icon-up.svg', SGWPLUGIN_URL_FRONT);
+        $bcFootballIcon  = sprintf('%s/images/content/football-icon.svg', SGWPLUGIN_URL_FRONT);
+
+        // Иконки
+        $pinnedIcon      = sprintf('%s/images/content/pinn-icon.svg', SGWPLUGIN_URL_FRONT);
+        $arrowIcon       = sprintf('%s/images/content/arrow-icon-up.svg', SGWPLUGIN_URL_FRONT);
+        $arrowIconWhite  = sprintf('%s/images/content/arrow-icon-white.svg', SGWPLUGIN_URL_FRONT);
+
+        // Структура filters — как в CatalogController
+        $filters = [
+            'leagues_by_country' => $this->getGroupedLeaguesByCountry(),
+            // при желании можно добавить calendar/combined,
+            // но для сайдбара нужны только страны
+        ];
 
         return Twig::render('pages/league/view.twig', [
-            'countrySlug' => $this->countrySlug,
-            'leagueName' => $league['name'],
-            'filters_leagues_by_country' => $this->getGroupedLeaguesByCountry(),
-            'match_cards_by_status' => $matchCardsByStatus,
-            'pinned_leagues' => $this->getPinnedLeagues(),
-            'active_status' => $active,
-            'breadcrumbs' => $breadcrumbs,
+            'countrySlug'              => $this->countrySlug,
+            'leagueName'               => $league['name'],
+            'filters'                  => $filters,
+            'match_cards_by_status'    => $matchCardsByStatus,
+            'pinned_leagues'           => $this->getPinnedLeagues(),
+            'active_status'            => $active,
+            'breadcrumbs'              => $breadcrumbs,
+            'pinned_icon'              => $pinnedIcon,
+            'arrow_icon'               => $arrowIcon,
+            'arrow_icon_white'         => $arrowIconWhite,
+            'bc_arrow_icon'            => $bcArrowIcon,
+            'bc_football_icon'         => $bcFootballIcon,
         ]);
     }
+
 }

@@ -77,3 +77,126 @@ eval("__webpack_require__.r(__webpack_exports__);\n// extracted by mini-css-extr
 /******/ 	
 /******/ })()
 ;
+
+// Скрипт для возможности запиннеть лигу пользователем
+(function(){
+  const STORAGE_KEY = 'sgw_user_pins_v1';
+
+  // ===== Storage helpers =====
+  function readPins(){
+    try {
+      const raw = sessionStorage.getItem(STORAGE_KEY);
+      const arr = raw ? JSON.parse(raw) : [];
+      return Array.isArray(arr) ? arr : [];
+    } catch(e){ return []; }
+  }
+  function savePins(arr){
+    try { sessionStorage.setItem(STORAGE_KEY, JSON.stringify(arr)); } catch(e){}
+  }
+  function keyOf(meta){
+    // Стабильный ключ — предпочитаем id, иначе slug
+    return meta && (String(meta.id||'').trim() || String(meta.slug||'').trim());
+  }
+  function isSame(a,b){
+    return keyOf(a) && keyOf(a) === keyOf(b);
+  }
+
+  // ===== CRUD pins =====
+  function isPinned(meta){
+    const pins = readPins();
+    return pins.some(p => isSame(p, meta));
+  }
+  function addPin(meta){
+    if (!keyOf(meta)) return;
+    const pins = readPins();
+    if (!pins.some(p => isSame(p, meta))){
+      pins.push({
+        id:   meta.id || null,
+        slug: meta.slug || null,
+        title: meta.title || '',
+        url:  meta.url || '#'
+      });
+      savePins(pins);
+    }
+  }
+  function removePin(meta){
+    if (!keyOf(meta)) return;
+    const pins = readPins().filter(p => !isSame(p, meta));
+    savePins(pins);
+  }
+  function togglePin(meta){
+    if (isPinned(meta)) removePin(meta);
+    else addPin(meta);
+  }
+
+  // ===== UI: Sidebar render (append user pins after server ones) =====
+  function renderPinnedList(){
+    const list = document.getElementById('sgw-pinned-list');
+    if (!list) return;
+
+    // Удаляем только ранее добавленные JS-элементы
+    list.querySelectorAll('li[data-user-pin="1"]').forEach(li => li.remove());
+
+    const pins = readPins();
+    if (!pins.length) return;
+
+    const frag = document.createDocumentFragment();
+    pins.forEach(p => {
+      const li = document.createElement('li');
+      li.setAttribute('data-user-pin', '1');
+      const a = document.createElement('a');
+      a.href = p.url || '#';
+      a.textContent = p.title || (p.slug || p.id || 'League');
+      li.appendChild(a);
+      frag.appendChild(li);
+    });
+    list.appendChild(frag);
+  }
+
+  // ===== UI: Button state sync =====
+  function metaFromBtn(btn){
+    return {
+      id:   (btn.getAttribute('data-pin-id') || '').trim(),
+      slug: (btn.getAttribute('data-pin-slug') || '').trim(),
+      title:(btn.getAttribute('data-pin-title') || '').trim(),
+      url:  (btn.getAttribute('data-pin-url') || '').trim(),
+    };
+  }
+  function applyBtnState(btn){
+    const meta = metaFromBtn(btn);
+    const pinned = isPinned(meta);
+    btn.classList.toggle('is-pinned', pinned);
+    btn.title = pinned ? 'Unpin league' : 'Pin this league';
+    btn.setAttribute('aria-label', btn.title);
+  }
+  function syncAllButtons(){
+    document.querySelectorAll('.sgw-pin-btn').forEach(applyBtnState);
+  }
+
+  // ===== Events =====
+  document.addEventListener('click', function(e){
+    const btn = e.target.closest('.sgw-pin-btn');
+    if (!btn) return;
+
+    const meta = metaFromBtn(btn);
+    if (!keyOf(meta)) return;
+
+    togglePin(meta);
+    applyBtnState(btn);
+    renderPinnedList();
+  });
+
+  // ===== Init on load =====
+  document.addEventListener('DOMContentLoaded', function(){
+    renderPinnedList();
+    syncAllButtons();
+  });
+
+  // Если контент подгружается динамически (SPA / ajax), можно вызвать публичный ресинк:
+  window.SGW_Pins = {
+    refresh: function(){
+      renderPinnedList();
+      syncAllButtons();
+    }
+  };
+})();

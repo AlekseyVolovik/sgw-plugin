@@ -1,431 +1,778 @@
 {# ========================== pages/match/view.twig ========================== #}
-<div class="sgw-match">
-  {# ---------- HEADER / WRAPPER ---------- #}
 
-  <nav class="sgw-breadcrumbs" aria-label="Breadcrumb">
-    <ol class="sgw-breadcrumbs__list">
-      {% for b in breadcrumbs %}
-        <li class="sgw-breadcrumbs__item">
-          {% if b.url %}
-            <a href="{{ b.url }}" class="sgw-breadcrumbs__link">{{ b.label }}</a>
-          {% else %}
-            <span class="sgw-breadcrumbs__current">{{ b.label }}</span>
-          {% endif %}
-        </li>
-      {% endfor %}
-    </ol>
-  </nav>
-
-  <div class="sgw-match__wrapper">
-    <div class="sgw-match__league">
-      {% if match.league.url %}
-        <a href="{{ match.league.url }}">{{ match.league.country }} — {{ match.league.name }}</a>
-      {% else %}
-        {{ match.league.country }} — {{ match.league.name }}
-      {% endif %}
+<div class="sgw-catalog">
+  <div class="sgw-catalog__sidebar">
+    {# Табы сайдбара (мобильные) #}
+    <div class="sgw-sidebar-tabs">
+      <button class="sgw-sidebar-tab is-active" data-sidebar-tab="pinned">
+        Pinned Leagues
+      </button>
+      <button class="sgw-sidebar-tab" data-sidebar-tab="countries">
+        Countries
+      </button>
     </div>
 
-    <div class="sgw-match__header">
-      <div class="sgw-match__team sgw-match__team--home">
-        <img
-          class="sgw-match__logo"
-          src="{{ match.teams[0].logo }}"
-          alt="{{ match.teams[0].name }}"
-          loading="lazy"
-          width="64" height="64"
-        />
-        <div class="sgw-match__name">{{ match.teams[0].name }}</div>
-      </div>
-
-      <div class="sgw-match__center">
-        {# --- определить: матч будущий? --- #}
-        {% set upcoming_statuses = ['upcoming','scheduled','not started','not_started'] %}
-        {% set isUpcoming = match.status is defined and (match.status|lower in upcoming_statuses) %}
-
-        {# --- ЦЕНТРАЛЬНЫЙ БЛОК --- #}
-        {% if isUpcoming %}
-          <div class="sgw-match__kickoff-block">
-            <div class="sgw-match__kickoff-date">
-              {% if match.datetime.rawDate %}
-                {{ match.datetime.rawDate|date("j F 'y") }}
-              {% endif %}
-            </div>
-            <div class="sgw-match__kickoff-time">
-              {% if match.datetime.attr %}
-                {{ match.datetime.attr|date('H:i') }}
-              {% elseif match.datetime.time %}
-                {{ match.datetime.time }}
-              {% endif %}
-            </div>
-          </div>
-        {% else %}
-          {% set s1 = match.teams[0].score %}
-          {% set s2 = match.teams[1].score %}
-          {% if s1 is not null or s2 is not null %}
-            <div class="sgw-match__score">
-              <span class="sgw-match__score-num">{{ s1 }}</span>
-              <span class="sgw-match__dash">–</span>
-              <span class="sgw-match__score-num">{{ s2 }}</span>
-            </div>
-          {% else %}
-            <div class="sgw-match__kickoff">
-              {% if match.datetime.rawDate %}{{ match.datetime.rawDate|date("j F 'y") }}{% endif %}
-              {% if match.datetime.attr %} • {{ match.datetime.attr|date('H:i') }}{% elseif match.datetime.time %} • {{ match.datetime.time }}{% endif %}
-            </div>
-          {% endif %}
-        {% endif %}
-
-        {# Статус и примечание #}
-        {% if match.status %}
-          <div class="sgw-match__status">
-            {% if match.status_note %}<small class="sgw-match__status-note">{{ match.status_note }}</small>{% endif %}
-          </div>
-        {% endif %}
-      </div>
-
-      <div class="sgw-match__team sgw-match__team--away">
-        <img
-          class="sgw-match__logo"
-          src="{{ match.teams[1].logo }}"
-          alt="{{ match.teams[1].name }}"
-          loading="lazy"
-          width="64" height="64"
-        />
-        <div class="sgw-match__name">{{ match.teams[1].name }}</div>
-      </div>
+    {# Панель Pinned #}
+    <div class="sgw-sidebar-panel is-active" data-sidebar-panel="pinned">
+      {% include '@blocks/pinned-leagues/pinned-leagues.twig' %}
     </div>
 
-    {% if match.venue is defined and match.venue|trim %}
-      <div class="sgw-match__place">
-        <svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" role="img" width="1em" height="1em" viewBox="0 0 24 24">
-          <path fill="currentColor" d="M7 5L3 7V3l4 2m11-2v4l4-2l-4-2m-7-1v4l4-2l-4-2m-6 8c1.4.5 3.8 1 7 1s5.6-.5 7-1c0-.2-2.8-1-7-1s-7 .9-7 1m10 7H9v4.9c-4.1-.4-7-1.5-7-2.9v-9c0-1.7 4.5-3 10-3s10 1.3 10 3v9c0 1.3-2.9 2.5-7 2.9V17Z"></path>
-        </svg>
-        <div class="sgw-match__place-text">
-          {{ match.venue }}
-        </div>
-      </div>
-    {% endif %}
+    {# Панель Countries #}
+    <div class="sgw-sidebar-panel" data-sidebar-panel="countries">
+      {% include '@blocks/filter/leagues-by-country.twig' with {
+        'filters_leagues_by_country': filters.leagues_by_country
+      } %}
+    </div>
   </div>
 
-  {# ================== TABS ================== #}
-  <section class="sgw-tabs">
-    <div class="sgw-tabs__list" role="tablist" aria-label="Match sections">
-      <button class="sgw-tab is-active" role="tab" aria-selected="true"
-              aria-controls="tab-overview" id="tabbtn-overview" data-tab="overview">Overview</button>
-      <button class="sgw-tab" role="tab" aria-selected="false"
-              aria-controls="tab-lineups" id="tabbtn-lineups" data-tab="lineups">Line-ups</button>
-      <button class="sgw-tab" role="tab" aria-selected="false"
-              aria-controls="tab-h2h" id="tabbtn-h2h" data-tab="h2h">H2H</button>
-      <button class="sgw-tab" role="tab" aria-selected="false"
-              aria-controls="tab-form" id="tabbtn-form" data-tab="form">Standings</button>
-    </div>
+  <div class="sgw-sidebar-overlay" aria-hidden="true"></div>
 
-    {# ----- TAB: OVERVIEW ----- #}
-    <div id="tab-overview" class="sgw-tabpanel is-active" role="tabpanel" aria-labelledby="tabbtn-overview">
+  <div class="sgw-catalog__content">
+    <div class="sgw-match">
 
-      <div class="sgw-card">
-        <h3 class="sgw-card__title">Match info</h3>
-        {% if match.info is defined and match.info.items is not empty %}
-          <dl class="sgw-info">
-            {% for row in match.info.items %}
-              <div class="sgw-info__row">
-                <dt class="sgw-info__label">{{ row.label }}</dt>
-                <dd class="sgw-info__value">{{ row.value }}</dd>
+      {% if breadcrumbs %}
+      <nav class="sgw-breadcrumbs" aria-label="Breadcrumb">
+          <ol class="sgw-breadcrumbs__list">
+          {% for it in breadcrumbs %}
+              <li class="sgw-breadcrumbs__item">
+              {% if loop.first and bc_football_icon is defined %}
+                  <img
+                  src="{{ bc_football_icon }}"
+                  alt=""
+                  class="sgw-breadcrumbs__icon sgw-breadcrumbs__icon--football"
+                  />
+              {% endif %}
+
+              {% if it.url %}
+                  <a href="{{ it.url }}" class="sgw-breadcrumbs__link">
+                  {{ it.label }}
+                  </a>
+              {% else %}
+                  <span class="sgw-breadcrumbs__current">
+                  {{ it.label }}
+                  </span>
+              {% endif %}
+
+              {% if not loop.last and bc_arrow_icon is defined %}
+                  <img
+                  src="{{ bc_arrow_icon }}"
+                  alt=">"
+                  class="sgw-breadcrumbs__separator"
+                  />
+              {% endif %}
+              </li>
+          {% endfor %}
+          </ol>
+      </nav>
+      {% endif %}
+
+      <div class="sgw-match__wrapper">
+        <div class="sgw-match__date">
+          {% set dateLabel = null %}
+          {% set timeLabel = null %}
+
+          {# Дата: из rawDate или attr #}
+          {% if match.datetime.rawDate %}
+            {% set dateLabel = match.datetime.rawDate|date('d/m') %}
+          {% elseif match.datetime.attr %}
+            {% set dateLabel = match.datetime.attr|date('d/m') %}
+          {% endif %}
+
+          {# Время: строго 24ч формат #}
+          {% if match.datetime.attr %}
+            {% set timeLabel = match.datetime.attr|date('H:i') %}
+          {% elseif match.datetime.time %}
+            {% set timeLabel = match.datetime.time %}
+          {% endif %}
+
+          {% if dateLabel or timeLabel %}
+            {{ dateLabel }}{% if timeLabel %} {{ timeLabel }}{% endif %}
+          {% endif %}
+        </div>
+
+        <div class="sgw-match__header">
+          <div class="sgw-match__team sgw-match__team--home">
+            <img class="sgw-match__logo" src="{{ match.teams[0].logo }}" alt="{{ match.teams[0].name }}" loading="lazy" />
+            <div class="sgw-match__name">{{ match.teams[0].name }}</div>
+          </div>
+
+          <div class="sgw-match__center">
+            {# определить: матч будущий? #}
+            {% set upcoming_statuses = ['upcoming', 'scheduled', 'not started', 'not_started'] %}
+            {% set isUpcoming = match.status is defined and (match.status|lower in upcoming_statuses) %}
+
+            {# подготовим дату/время для подписи #}
+            {% set rawDate = match.datetime.rawDate ?? null %}
+            {% set attr    = match.datetime.attr ?? null %}
+            {% set pretty_date = rawDate
+                ? rawDate|date("j F 'y")
+                : (attr ? attr|date("j F 'y") : null)
+            %}
+            {% set pretty_time = attr
+                ? attr|date('H:i')
+                : (match.datetime.time ?? null)
+            %}
+
+            {% set s1 = match.teams[0].score %}
+            {% set s2 = match.teams[1].score %}
+
+            {# --- ЦЕНТРАЛЬНЫЙ БЛОК --- #}
+            {% if isUpcoming %}
+              {# Для будущих матчей: всегда показываем "– : –" как у обычного счёта #}
+              <div class="sgw-match__score">
+                <span class="sgw-match__score-num sgw-match__score-num--first">-</span>
+                <span class="sgw-match__score-num sgw-match__score-num--second">-</span>
               </div>
-            {% endfor %}
-          </dl>
-        {% else %}
-          <p class="sgw-empty">Match info is not available.</p>
-        {% endif %}
+            {% else %}
+              {% if s1 is not null or s2 is not null %}
+                {# Обычный матч со счётом #}
+                <div class="sgw-match__score">
+                  <span class="sgw-match__score-num sgw-match__score-num--first">{{ s1 }}</span>
+                  <span class="sgw-match__score-num sgw-match__score-num--second">{{ s2 }}</span>
+                </div>
+              {% else %}
+                {# На всякий случай: нет статуса upcoming и нет счёта — показываем просто дату/время #}
+                <div class="sgw-match__kickoff">
+                  {% if pretty_date %}{{ pretty_date }}{% endif %}
+                  {% if pretty_time %} • {{ pretty_time }}{% endif %}
+                </div>
+              {% endif %}
+            {% endif %}
+
+            {# Статус и примечание #}
+            {% if match.status %}
+              <div class="sgw-match__status">
+                {% if match.status_note %}
+                  <div class="sgw-match__status-note">{{ match.status_note }}</div>
+                {% endif %}
+              </div>
+            {% endif %}
+          </div>
+
+          <div class="sgw-match__team sgw-match__team--away">
+            <img class="sgw-match__logo" src="{{ match.teams[1].logo }}" alt="{{ match.teams[1].name }}" loading="lazy" />
+            <div class="sgw-match__name">{{ match.teams[1].name }}</div>
+          </div>
+        </div>
       </div>
 
-      <div class="sgw-card">
-        <h3 class="sgw-card__title">Score breakdown &amp; Status</h3>
+      {# ================== TABS ================== #}
+      <section class="sgw-tabs">
+        <div class="sgw-tabs__list" role="tablist" aria-label="Match sections">
+          <button class="sgw-tab is-active" role="tab" aria-selected="true"
+                  aria-controls="tab-summary" id="tabbtn-summary" data-tab="summary">Summary</button>
+          <button class="sgw-tab" role="tab" aria-selected="false"
+                  aria-controls="tab-standings" id="tabbtn-standings" data-tab="standings">Standings</button>
+          <button class="sgw-tab" role="tab" aria-selected="false"
+                  aria-controls="tab-h2h" id="tabbtn-h2h" data-tab="h2h">H2H</button>
+          <button class="sgw-tab" role="tab" aria-selected="false"
+                  aria-controls="tab-lineups" id="tabbtn-lineups" data-tab="lineups">Lineups</button>
+        </div>
 
-        <div class="sgw-info">
-          <div class="sgw-info__row">
-            <dt class="sgw-info__label">Status</dt>
-            <dd class="sgw-info__value">
-              {{ mc_status.long ?? mc_status.short ?? '—' }}
-              {% if mc_status.elapsed %}<small> • {{ mc_status.elapsed }}</small>{% endif %}
-            </dd>
+        {# ----- TAB: summary ----- #}
+        <div id="tab-summary" class="sgw-tabpanel is-active" role="tabpanel" aria-labelledby="tabbtn-summary">
+
+          {# === MATCH TIMELINE === #}
+          {% set hh = mc_highlights_halves ?? {} %}
+          {% set homeH1 = hh.home.h1 ?? [] %}
+          {% set homeH2 = hh.home.h2 ?? [] %}
+          {% set awayH1 = hh.away.h1 ?? [] %}
+          {% set awayH2 = hh.away.h2 ?? [] %}
+
+          {% if (homeH1|length) or (awayH1|length) or (homeH2|length) or (awayH2|length) %}
+
+            {# пути к иконкам (передаются из контроллера) #}
+            {% set icon_goal   = icon_goal   ?? '' %}
+            {% set icon_yellow = icon_yellow ?? '' %}
+            {% set icon_red    = icon_red    ?? '' %}
+            {% set icon_sub    = icon_sub    ?? '' %}
+
+            <div class="sgw-card sgw-card--timeline">
+              <div class="sgw-card__title">Match Timeline</div>
+
+              <div class="sgw-timeline">
+
+                {# ============= 1ST HALF ============= #}
+
+                {% set iHome = 0 %}
+                {% set iAway = 0 %}
+                {% set lenHome = homeH1|length %}
+                {% set lenAway = awayH1|length %}
+                {% set sHome = 0 %}
+                {% set sAway = 0 %}
+
+                {% for _ in 0..(lenHome + lenAway - 1) %}
+                  {% set evHome = iHome < lenHome ? homeH1[iHome] : null %}
+                  {% set evAway = iAway < lenAway ? awayH1[iAway] : null %}
+
+                  {% set mHome = evHome and evHome.time.elapsed is defined ? evHome.time.elapsed : 9999 %}
+                  {% set mAway = evAway and evAway.time.elapsed is defined ? evAway.time.elapsed : 9999 %}
+
+                  {# -------- home event -------- #}
+                  {% if evHome is not null and (evAway is null or mHome <= mAway) %}
+                    {% set minute = mHome %}
+                    {% set extra  = evHome.time.extra ?? null %}
+                    {% set raw    = ((evHome.type ?? '') ~ ' ' ~ (evHome.detail ?? ''))|lower %}
+                    {% set isGoal = 'goal' in raw %}
+                    {% set isYellow = 'yellow card' in raw %}
+                    {% set isRed = 'red card' in raw or 'direct red' in raw or ('second yellow' in raw) or ('2nd yellow' in raw) %}
+                    {% set isSub = 'substitution' in raw %}
+
+                    {% if isGoal %}{% set sHome = sHome + 1 %}{% endif %}
+
+                    <div class="sgw-timeline__row">
+                      <div class="sgw-timeline__time">
+                        {{ minute }}{% if extra %}+{{ extra }}{% endif %}'
+                      </div>
+
+                      <div class="sgw-timeline__event sgw-timeline__event--home">
+                        {% if isGoal and icon_goal %}
+                          <span class="sgw-timeline__icon"><img src="{{ icon_goal }}" alt="Goal"></span>
+                        {% elseif isYellow and icon_yellow %}
+                          <span class="sgw-timeline__icon"><img src="{{ icon_yellow }}" alt="Yellow card"></span>
+                        {% elseif isRed and icon_red %}
+                          <span class="sgw-timeline__icon"><img src="{{ icon_red }}" alt="Red card"></span>
+                        {% elseif isSub and icon_sub %}
+                          <span class="sgw-timeline__icon"><img src="{{ icon_sub }}" alt="Substitution"></span>
+                        {% endif %}
+
+                        <span class="sgw-timeline__text">
+                          {% if evHome.playerName %}
+                            <span class="sgw-timeline__player">{{ evHome.playerName }}</span>
+                          {% endif %}
+                          {% if evHome.assistantName %}
+                            <span class="sgw-timeline__assist">{{ evHome.assistantName }}</span>
+                          {% endif %}
+                          {% if evHome.detail and not (isGoal or isYellow or isRed or isSub) %}
+                            <span class="sgw-timeline__detail">{{ evHome.detail }}</span>
+                          {% endif %}
+                        </span>
+                      </div>
+
+                      <div class="sgw-timeline__score">
+                        {% if isGoal %}{{ sHome }} - {{ sAway }}{% endif %}
+                      </div>
+
+                      <div class="sgw-timeline__event sgw-timeline__event--away"></div>
+                    </div>
+
+                    {% set iHome = iHome + 1 %}
+
+                  {# -------- away event -------- #}
+                  {% elseif evAway is not null %}
+                    {% set minute = mAway %}
+                    {% set extra  = evAway.time.extra ?? null %}
+                    {% set raw    = ((evAway.type ?? '') ~ ' ' ~ (evAway.detail ?? ''))|lower %}
+                    {% set isGoal = 'goal' in raw %}
+                    {% set isYellow = 'yellow card' in raw %}
+                    {% set isRed = 'red card' in raw or 'direct red' in raw or ('second yellow' in raw) or ('2nd yellow' in raw) %}
+                    {% set isSub = 'substitution' in raw %}
+
+                    {% if isGoal %}{% set sAway = sAway + 1 %}{% endif %}
+
+                    <div class="sgw-timeline__row">
+                      <div class="sgw-timeline__time">
+                        {{ minute }}{% if extra %}+{{ extra }}{% endif %}'
+                      </div>
+
+                      <div class="sgw-timeline__event sgw-timeline__event--home"></div>
+
+                      <div class="sgw-timeline__score">
+                        {% if isGoal %}{{ sHome }} - {{ sAway }}{% endif %}
+                      </div>
+
+                      <div class="sgw-timeline__event sgw-timeline__event--away">
+                        {# иконка #}
+                        {% if isGoal and icon_goal %}
+                          <span class="sgw-timeline__icon"><img src="{{ icon_goal }}" alt="Goal"></span>
+                        {% elseif isYellow and icon_yellow %}
+                          <span class="sgw-timeline__icon"><img src="{{ icon_yellow }}" alt="Yellow card"></span>
+                        {% elseif isRed and icon_red %}
+                          <span class="sgw-timeline__icon"><img src="{{ icon_red }}" alt="Red card"></span>
+                        {% elseif isSub and icon_sub %}
+                          <span class="sgw-timeline__icon"><img src="{{ icon_sub }}" alt="Substitution"></span>
+                        {% endif %}
+
+                        <span class="sgw-timeline__text">
+                          {% if evAway.playerName %}
+                            <span class="sgw-timeline__player">{{ evAway.playerName }}</span>
+                          {% endif %}
+                          {% if evAway.assistantName %}
+                            <span class="sgw-timeline__assist">{{ evAway.assistantName }}</span>
+                          {% endif %}
+                          {% if evAway.detail and not (isGoal or isYellow or isRed or isSub) %}
+                            <span class="sgw-timeline__detail">{{ evAway.detail }}</span>
+                          {% endif %}
+                        </span>
+                      </div>
+
+                    </div>
+
+                    {% set iAway = iAway + 1 %}
+                  {% endif %}
+                {% endfor %}
+
+                {% set ht_home = sHome %}
+                {% set ht_away = sAway %}
+
+                <div class="sgw-timeline__row sgw-timeline__row--period">
+                  <div class="sgw-timeline__time">HT</div>
+                  <div class="sgw-timeline__event sgw-timeline__event--home"></div>
+                  <div class="sgw-timeline__score">{{ ht_home }} - {{ ht_away }}</div>
+                  <div class="sgw-timeline__event sgw-timeline__event--away"></div>
+                </div>
+
+                {# ============= 2ND HALF ============= #}
+                {% if homeH2|length or awayH2|length %}
+
+                  {% set iHome = 0 %}
+                  {% set iAway = 0 %}
+                  {% set lenHome = homeH2|length %}
+                  {% set lenAway = awayH2|length %}
+                  {% set sHome = ht_home %}
+                  {% set sAway = ht_away %}
+
+                  {% for _ in 0..(lenHome + lenAway - 1) %}
+                    {% set evHome = iHome < lenHome ? homeH2[iHome] : null %}
+                    {% set evAway = iAway < lenAway ? awayH2[iAway] : null %}
+
+                    {% set mHome = evHome and evHome.time.elapsed is defined ? evHome.time.elapsed : 9999 %}
+                    {% set mAway = evAway and evAway.time.elapsed is defined ? evAway.time.elapsed : 9999 %}
+
+                    {% if evHome is not null and (evAway is null or mHome <= mAway) %}
+                      {% set minute = mHome %}
+                      {% set extra  = evHome.time.extra ?? null %}
+                      {% set raw    = ((evHome.type ?? '') ~ ' ' ~ (evHome.detail ?? ''))|lower %}
+                      {% set isGoal = 'goal' in raw %}
+                      {% set isYellow = 'yellow card' in raw %}
+                      {% set isRed = 'red card' in raw or 'direct red' in raw or ('second yellow' in raw) or ('2nd yellow' in raw) %}
+                      {% set isSub = 'substitution' in raw %}
+
+                      {% if isGoal %}{% set sHome = sHome + 1 %}{% endif %}
+
+                      <div class="sgw-timeline__row">
+                        <div class="sgw-timeline__time">
+                          {{ minute }}{% if extra %}+{{ extra }}{% endif %}'
+                        </div>
+
+                        <div class="sgw-timeline__event sgw-timeline__event--home">
+                          {% if isGoal and icon_goal %}
+                            <span class="sgw-timeline__icon"><img src="{{ icon_goal }}" alt="Goal"></span>
+                          {% elseif isYellow and icon_yellow %}
+                            <span class="sgw-timeline__icon"><img src="{{ icon_yellow }}" alt="Yellow card"></span>
+                          {% elseif isRed and icon_red %}
+                            <span class="sgw-timeline__icon"><img src="{{ icon_red }}" alt="Red card"></span>
+                          {% elseif isSub and icon_sub %}
+                            <span class="sgw-timeline__icon"><img src="{{ icon_sub }}" alt="Substitution"></span>
+                          {% endif %}
+
+                          <span class="sgw-timeline__text">
+                            {% if evHome.playerName %}
+                              <span class="sgw-timeline__player">{{ evHome.playerName }}</span>
+                            {% endif %}
+                            {% if evHome.assistantName %}
+                              <span class="sgw-timeline__assist">{{ evHome.assistantName }}</span>
+                            {% endif %}
+                            {% if evHome.detail and not (isGoal or isYellow or isRed or isSub) %}
+                              <span class="sgw-timeline__detail">{{ evHome.detail }}</span>
+                            {% endif %}
+                          </span>
+                        </div>
+
+                        <div class="sgw-timeline__score">
+                          {% if isGoal %}{{ sHome }} - {{ sAway }}{% endif %}
+                        </div>
+
+                        <div class="sgw-timeline__event sgw-timeline__event--away"></div>
+                      </div>
+
+                      {% set iHome = iHome + 1 %}
+
+                    {% elseif evAway is not null %}
+                      {% set minute = mAway %}
+                      {% set extra  = evAway.time.extra ?? null %}
+                      {% set raw    = ((evAway.type ?? '') ~ ' ' ~ (evAway.detail ?? ''))|lower %}
+                      {% set isGoal = 'goal' in raw %}
+                      {% set isYellow = 'yellow card' in raw %}
+                      {% set isRed = 'red card' in raw or 'direct red' in raw or ('second yellow' in raw) or ('2nd yellow' in raw) %}
+                      {% set isSub = 'substitution' in raw %}
+
+                      {% if isGoal %}{% set sAway = sAway + 1 %}{% endif %}
+
+                      <div class="sgw-timeline__row">
+                        <div class="sgw-timeline__time">
+                          {{ minute }}{% if extra %}+{{ extra }}{% endif %}'
+                        </div>
+
+                        <div class="sgw-timeline__event sgw-timeline__event--home"></div>
+
+                        <div class="sgw-timeline__score">
+                          {% if isGoal %}{{ sHome }} - {{ sAway }}{% endif %}
+                        </div>
+
+                        <div class="sgw-timeline__event sgw-timeline__event--away">
+                          {# иконка #}
+                          {% if isGoal and icon_goal %}
+                            <span class="sgw-timeline__icon"><img src="{{ icon_goal }}" alt="Goal"></span>
+                          {% elseif isYellow and icon_yellow %}
+                            <span class="sgw-timeline__icon"><img src="{{ icon_yellow }}" alt="Yellow card"></span>
+                          {% elseif isRed and icon_red %}
+                            <span class="sgw-timeline__icon"><img src="{{ icon_red }}" alt="Red card"></span>
+                          {% elseif isSub and icon_sub %}
+                            <span class="sgw-timeline__icon"><img src="{{ icon_sub }}" alt="Substitution"></span>
+                          {% endif %}
+
+                          <span class="sgw-timeline__text">
+                            {% if evAway.playerName %}
+                              <span class="sgw-timeline__player">{{ evAway.playerName }}</span>
+                            {% endif %}
+                            {% if evAway.assistantName %}
+                              <span class="sgw-timeline__assist">{{ evAway.assistantName }}</span>
+                            {% endif %}
+                            {% if evAway.detail and not (isGoal or isYellow or isRed or isSub) %}
+                              <span class="sgw-timeline__detail">{{ evAway.detail }}</span>
+                            {% endif %}
+                          </span>
+                        </div>
+
+                      </div>
+
+                      {% set iAway = iAway + 1 %}
+                    {% endif %}
+                  {% endfor %}
+                {% endif %}
+
+                <div class="sgw-timeline__row sgw-timeline__row--period">
+                  <div class="sgw-timeline__time">FT</div>
+                  <div class="sgw-timeline__event sgw-timeline__event--home"></div>
+                  <div class="sgw-timeline__score">{{ sHome }} - {{ sAway }}</div>
+                  <div class="sgw-timeline__event sgw-timeline__event--away"></div>
+                </div>
+
+              </div>
+            </div>
+          {% endif %}
+
+          {# ===== Unified Match Info card ===== #}
+          <div class="sgw-card">
+            <div class="sgw-card__title">Match Info</div>
+
+            {% set infoItems = (match.info is defined and match.info.items is defined) ? match.info.items : [] %}
+            {# Сформируем map по label из старого match.info #}
+            {% set infoMap = {} %}
+            {% for row in infoItems %}
+              {% set infoMap = infoMap|merge({ (row.label): row.value }) %}
+            {% endfor %}
+
+            {% set d = (mc_event is defined and mc_event.details is defined) ? mc_event.details : {} %}
+            {% set ds = d.detailedStatus ?? {} %}
+            {% set sc = d.score ?? {} %}
+
+            <dl class="sgw-info">
+
+              {# Status: detailedStatus > mc_event.status > infoMap['Status'] #}
+              {% set statusText = '' %}
+              {% if ds.long is defined or ds.short is defined %}
+                {% set statusText = (ds.long ?? ds.short) %}
+                {% if ds.elapsed is not null %}
+                  {% set statusText = statusText ~ ' • ' ~ ds.elapsed ~ '’' %}
+                {% endif %}
+              {% elseif mc_event is defined and mc_event.status is defined %}
+                {% set statusText = mc_event.status %}
+              {% elseif infoMap['Status'] is defined %}
+                {% set statusText = infoMap['Status'] %}
+              {% endif %}
+              {% if statusText %}
+                <div class="sgw-info__row">
+                  <div class="sgw-info__label">Status</div>
+                  <div class="sgw-info__value">{{ statusText }}</div>
+                </div>
+              {% endif %}
+
+              {# Venue: приоритет из details.venue*, иначе infoMap['Venue'] #}
+              {% set venueFromDetails = '' %}
+              {% if d.venue is defined %}
+                {% set venueParts = [d.venue.name|default(null), d.venue.cityName|default(null), d.venue.countryName|default(null)]|filter(v => v) %}
+                {% if venueParts|length %}
+                  {% set venueFromDetails = venueParts|join(', ') %}
+                {% endif %}
+              {% endif %}
+              {% set venueVal = venueFromDetails ?: (infoMap['Venue'] ?? null) %}
+              {% if venueVal %}
+                <div class="sgw-info__row">
+                  <div class="sgw-info__label">Venue</div>
+                  <div class="sgw-info__value">{{ venueVal }}</div>
+                </div>
+              {% endif %}
+
+              {# Referee — только из details #}
+              {% if d.referee is defined and d.referee %}
+                <div class="sgw-info__row">
+                  <div class="sgw-info__label">Referee</div>
+                  <div class="sgw-info__value">{{ d.referee }}</div>
+                </div>
+              {% endif %}
+            </dl>
+
+            {# Если в итоге строк нет — fallback #}
+            {% if (statusText is empty)
+                  and (roundVal is empty)
+                  and (venueVal is empty)
+                  and (d.referee is empty) %}
+              <p class="sgw-empty">Match info is not available.</p>
+            {% endif %}
           </div>
         </div>
 
-        <table class="sgw-table sgw-table--compact">
-          <thead>
-            <tr><th>Period</th><th>{{ match.teams[0].name }}</th><th>{{ match.teams[1].name }}</th></tr>
-          </thead>
-          <tbody>
-            {% set rows = {
-              'HT': mc_score.halftime ?? {},
-              'FT': mc_score.fulltime ?? {},
-              'ET': mc_score.extratime ?? {},
-              'PEN': mc_score.penalty ?? {}
-            } %}
-            {% for label, r in rows %}
-              {% if r.home is not null or r.away is not null %}
+        {# ----- TAB: standings ----- #}
+        <div id="tab-standings" class="sgw-tabpanel" role="tabpanel" aria-labelledby="tabbtn-standings" hidden>
+          <div class="sgw-card">
+            <div class="sgw-card__title">Form (last 5 matches)</div>
+            <table class="sgw-table sgw-form">
+              <thead>
                 <tr>
-                  <td>{{ label }}</td>
-                  <td>{{ r.home is not null ? r.home : '—' }}</td>
-                  <td>{{ r.away is not null ? r.away : '—' }}</td>
+                  <th>#</th><th>Team</th><th>MP</th><th>W</th><th>D</th><th>L</th>
+                  <th>G</th><th>GD</th><th>PTS</th><th>FORM</th>
                 </tr>
-              {% endif %}
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-
-      {% if mc_event %}
-        {% set d = mc_event.details ?? {} %}
-        <div class="sgw-card">
-          <h3 class="sgw-card__title">Match facts</h3>
-
-          <div class="sgw-info__row">
-            <dt class="sgw-info__label">Status</dt>
-            <dd class="sgw-info__value">
-              {% if d.detailedStatus %}
-                {{ d.detailedStatus.long }} ({{ d.detailedStatus.short }})
-                {% if d.detailedStatus.elapsed is not null %} • {{ d.detailedStatus.elapsed }}'{% endif %}
-              {% else %}
-                {{ mc_event.status }}
-              {% endif %}
-            </dd>
-          </div>
-
-          <div class="sgw-info__row">
-            <dt class="sgw-info__label">Score</dt>
-            <dd class="sgw-info__value">
-              {% set sc = d.score ?? {} %}
-              {{ sc.home is defined ? sc.home : (match.teams[0].score ?? '-') }}
-              –
-              {{ sc.away is defined ? sc.away : (match.teams[1].score ?? '-') }}
-            </dd>
-          </div>
-
-          {% if d.round %}
-            <div class="sgw-info__row">
-              <dt class="sgw-info__label">Round</dt>
-              <dd class="sgw-info__value">{{ d.round }}</dd>
-            </div>
-          {% endif %}
-
-          {% if d.venue and (d.venue.name or d.venue.cityName or d.venue.countryName) %}
-            <div class="sgw-info__row">
-              <dt class="sgw-info__label">Venue</dt>
-              <dd class="sgw-info__value">
-                {{ [d.venue.name, d.venue.cityName, d.venue.countryName]|filter(v => v)|join(', ') }}
-              </dd>
-            </div>
-          {% endif %}
-
-          {% if d.referee %}
-            <div class="sgw-info__row">
-              <dt class="sgw-info__label">Referee</dt>
-              <dd class="sgw-info__value">{{ d.referee }}</dd>
-            </div>
-          {% endif %}
-        </div>
-      {% endif %}
-
-      {% set hHome = d.highlights.home ?? [] %}
-      {% set hAway = d.highlights.away ?? [] %}
-      {% if hHome or hAway %}
-        <div class="sgw-card">
-          <h3 class="sgw-card__title">Highlights</h3>
-          <div class="sgw-grid">
-            <div>
-              <div class="sgw-box__subtitle">{{ match.teams[0].name }}</div>
-              {% if hHome %}
-                <ul class="sgw-list">
-                  {% for ev in hHome %}
-                    <li>
-                      <strong>{{ ev.time.elapsed }}'</strong>
-                      — {{ ev.type }}{% if ev.detail %}: {{ ev.detail }}{% endif %}
-                      {% if ev.playerName %} • {{ ev.playerName }}{% endif %}
-                      {% if ev.assistantName %} (assist: {{ ev.assistantName }}){% endif %}
-                    </li>
-                  {% endfor %}
-                </ul>
-              {% else %}
-                <div class="sgw-empty">No events.</div>
-              {% endif %}
-            </div>
-            <div>
-              <div class="sgw-box__subtitle">{{ match.teams[1].name }}</div>
-              {% if hAway %}
-                <ul class="sgw-list">
-                  {% for ev in hAway %}
-                    <li>
-                      <strong>{{ ev.time.elapsed }}'</strong>
-                      — {{ ev.type }}{% if ev.detail %}: {{ ev.detail }}{% endif %}
-                      {% if ev.playerName %} • {{ ev.playerName }}{% endif %}
-                      {% if ev.assistantName %} (assist: {{ ev.assistantName }}){% endif %}
-                    </li>
-                  {% endfor %}
-                </ul>
-              {% else %}
-                <div class="sgw-empty">No events.</div>
-              {% endif %}
-            </div>
+              </thead>
+              <tbody>
+                {% for r in mc_form %}
+                  <tr>
+                    <td class="pos">{{ r.pos }}.</td>
+                    <td class="team">{{ r.teamName }}</td>
+                    <td>{{ r.mp }}</td><td>{{ r.w }}</td><td>{{ r.d }}</td><td>{{ r.l }}</td>
+                    <td>{{ r.g }}</td><td>{{ r.gd }}</td><td>{{ r.pts }}</td>
+                    <td class="form">
+                      {% for f in r.form %}
+                        <span class="form-badge {{ f|lower }}">{{ f }}</span>
+                      {% endfor %}
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
           </div>
         </div>
-      {% endif %}
-    </div>
 
-    {# ----- TAB: LINE-UPS ----- #}
-    <div id="tab-lineups" class="sgw-tabpanel" role="tabpanel" aria-labelledby="tabbtn-lineups" hidden>
-      <div class="sgw-card">
-        <h3 class="sgw-card__title">Line-ups</h3>
-        <div class="sgw-lineups">
-          {% for side, team in {'home': mc_lineups.home, 'away': mc_lineups.away} %}
-            <div class="sgw-lineups__col">
-              <div class="sgw-lineups__header">
-                <div class="sgw-lineups__team">{{ side == 'home' ? match.teams[0].name : match.teams[1].name }}</div>
-                <div class="sgw-lineups__formation">{{ team.formation ?? '—' }}</div>
-              </div>
+        {# ----- TAB: H2H ----- #}
+        <div id="tab-h2h" class="sgw-tabpanel" role="tabpanel" aria-labelledby="tabbtn-h2h" hidden>
 
-              <div class="sgw-lineups__meta">
-                <div>Coach:
-                  {% if team.coach is iterable %}
-                    {{ team.coach.name ?? team.coach.fullName ?? '—' }}
+          {# логотипы текущих команд (передай из контроллера или возьми из match) #}
+          {% set team1_name = match.teams[0].name %}
+          {% set team2_name = match.teams[1].name %}
+          {% set team1_logo = match.teams[0].logo %}
+          {% set team2_logo = match.teams[1].logo %}
+          {% set team_placeholder = team_placeholder ?? (SGWPLUGIN_URL_FRONT ~ '/wp-content/plugins/sgw-plugin/mc-front/images/content/team-placeholder.png') %}
+
+          {# ===== T1 LAST MATCHES ===== #}
+          <div class="sgw-card">
+            <div class="sgw-card__title sgw-card__title--h2h">{{ prev_groups.t1.teamName }} Last Matches</div>
+            {% if prev_groups.t1.items %}
+              <ul class="sgw-prev">
+                {% for it in prev_groups.t1.items %}
+                  {% set res = (it.scoreTeam is not null and it.scoreOpp is not null)
+                      ? (it.scoreTeam > it.scoreOpp ? 'W' : (it.scoreTeam < it.scoreOpp ? 'L' : 'D'))
+                      : null %}
+                  {% set resClass = res == 'W' ? 'win' : (res == 'L' ? 'loss' : 'draw') %}
+
+                  <li class="sgw-prev__row {% if res %} sgw-prev__row--{{ resClass }}{% endif %}">
+
+                    <div class="sgw-prev__meta-block">  
+                      <div class="sgw-prev__date">{{ it.date ? (it.date|date('d.m.Y')) : '' }}</div>
+                      <div class="sgw-prev__meta">
+                        {{ it.league }}
+                      </div>
+                    </div>
+
+                    <div class="sgw-prev__teams"> 
+                      <span class="sgw-prev__badge {{ resClass }}">{{ res ?: '' }}</span>
+                      
+                      <span class="sgw-prev__team sgw-prev__team--left">
+                        <span class="sgw-prev__name sgw-prev__name--focus">{{ it.teamName }}</span>
+                        <span class="sgw-prev__logo"><img src="{{ team1_logo }}" alt="{{ prev_groups.t1.teamName }}"></span>
+                        {# {% if it.homeAway %}<small class="sgw-badge">{{ it.homeAway }}</small>{% endif %} #}
+                      </span>
+
+                      <span class="sgw-prev__scorebox">
+                        <span class="sgw-prev__score-num sgw-prev__score-num--first">{{ it.scoreTeam is not null ? it.scoreTeam : '—' }}</span>
+                        <span class="sgw-prev__score-num">{{ it.scoreOpp is not null ? it.scoreOpp : '—' }}</span>
+                      </span>
+
+                      <span class="sgw-prev__team sgw-prev__team--right">
+                        <span class="sgw-prev__logo"><img src="{{ team_placeholder }}" alt="{{ it.oppName ?? 'Opponent' }}"></span>
+                        <span class="sgw-prev__name">{{ it.oppName ?? '—' }}</span>
+                      </span>                     
+                    </div>
+                  </li>
+                {% endfor %}
+              </ul>
+            {% else %}
+              <p class="sgw-empty">No recent matches.</p>
+            {% endif %}
+          </div>
+
+          {# ===== T2 LAST MATCHES ===== #}
+          <div class="sgw-card">
+            <div class="sgw-card__title sgw-card__title--h2h">{{ prev_groups.t2.teamName }} Last Matches</div>
+            {% if prev_groups.t2.items %}
+              <ul class="sgw-prev">
+                {% for it in prev_groups.t2.items %}
+                  {% set res = (it.scoreTeam is not null and it.scoreOpp is not null)
+                      ? (it.scoreTeam > it.scoreOpp ? 'W' : (it.scoreTeam < it.scoreOpp ? 'L' : 'D'))
+                      : null %}
+                  {% set resClass = res == 'W' ? 'win' : (res == 'L' ? 'loss' : 'draw') %}
+
+                  <li class="sgw-prev__row {% if res %} sgw-prev__row--{{ resClass }}{% endif %}">
+
+                    <div class="sgw-prev__meta-block">
+                      <div class="sgw-prev__date">{{ it.date ? (it.date|date('d.m.Y')) : '' }}</div>
+                      <div class="sgw-prev__meta">
+                        {{ it.league }}
+                      </div>
+                    </div>
+
+                    <div class="sgw-prev__teams">
+                      <span class="sgw-prev__badge {{ resClass }}">{{ res ?: '' }}</span>
+                      <span class="sgw-prev__team sgw-prev__team--left">
+                        <span class="sgw-prev__name sgw-prev__name--focus">{{ it.teamName }}</span>
+                        <span class="sgw-prev__logo"><img src="{{ team2_logo }}" alt="{{ prev_groups.t2.teamName }}"></span>
+                        {# {% if it.homeAway %}<small class="sgw-badge">{{ it.homeAway }}</small>{% endif %} #}
+                      </span>
+
+                      <span class="sgw-prev__scorebox">
+                        <span class="sgw-prev__score-num sgw-prev__score-num--first">{{ it.scoreTeam is not null ? it.scoreTeam : '—' }}</span>
+                        <span class="sgw-prev__score-num">{{ it.scoreOpp is not null ? it.scoreOpp : '—' }}</span>
+                      </span>
+
+                      <span class="sgw-prev__team sgw-prev__team--right">
+                        <span class="sgw-prev__logo"><img src="{{ team_placeholder }}" alt="{{ it.oppName ?? 'Opponent' }}"></span>
+                        <span class="sgw-prev__name">{{ it.oppName ?? '—' }}</span>
+                      </span>
+                    </div>
+                  </li>
+                {% endfor %}
+              </ul>
+            {% else %}
+              <p class="sgw-empty">No recent matches.</p>
+            {% endif %}
+          </div>
+
+          {# ===== HEAD-TO-HEAD ===== #}
+          <div class="sgw-card">
+            <div class="sgw-card__title sgw-card__title--h2h">Head-to-Head Matches</div>
+            {% if prev_groups.h2h.items %}
+              <ul class="sgw-prev">
+                {% for it in prev_groups.h2h.items %}
+                  {# результат считаем относительно homeName #}
+                  {% set h = it.score ? it.score|split('–') : [] %}
+                  {% set sh = h[0] is defined and h[0] is not same as('') ? (h[0] + 0) : null %}
+                  {% set sa = h[1] is defined and h[1] is not same as('') ? (h[1] + 0) : null %}
+
+                  {% set res = (sh is not null and sa is not null)
+                      ? (sh > sa ? 'W' : (sh < sa ? 'L' : 'D'))
+                      : null %}
+                  {% set resClass = res == 'W' ? 'win' : (res == 'L' ? 'loss' : 'draw') %}
+
+                  <li class="sgw-prev__row {% if res %} sgw-prev__row--{{ resClass }}{% endif %}">
+
+                    <div class="sgw-prev__meta-block">
+                      <div class="sgw-prev__date">{{ it.date ? (it.date|date('d.m.Y')) : '' }}</div>
+                      <div class="sgw-prev__meta">
+                        {{ it.league }}
+                      </div>
+                    </div>
+
+                    <div class="sgw-prev__teams">
+                      <span class="sgw-prev__badge {{ resClass }}">{{ res ?: '' }}</span>
+                      <span class="sgw-prev__team sgw-prev__team--left">
+                        <span class="sgw-prev__logo">
+                          <img src="{{ it.homeName == team1_name ? team1_logo : (it.homeName == team2_name ? team2_logo : team_placeholder) }}" alt="{{ it.homeName }}">
+                        </span>
+                        <span class="sgw-prev__name sgw-prev__name--focus">{{ it.homeName }}</span>
+                      </span>
+
+                      <span class="sgw-prev__scorebox">
+                        <span class="sgw-prev__score-num sgw-prev__score-num--first">{{ sh is not null ? sh : '—' }}</span>
+                        <span class="sgw-prev__score-num">{{ sa is not null ? sa : '—' }}</span>
+                      </span>
+
+                      <span class="sgw-prev__team sgw-prev__team--right">
+                        <span class="sgw-prev__logo">
+                          <img src="{{ it.awayName == team1_name ? team1_logo : (it.awayName == team2_name ? team2_logo : team_placeholder) }}" alt="{{ it.awayName }}">
+                        </span>
+                        <span class="sgw-prev__name">{{ it.awayName }}</span>
+                      </span>
+                    </div>
+                  </li>
+                {% endfor %}
+              </ul>
+            {% else %}
+              <p class="sgw-empty">No head-to-head matches in the feed.</p>
+            {% endif %}
+          </div>
+
+        </div>
+
+
+        {# ----- TAB: LINEUPS ----- #}
+        <div id="tab-lineups" class="sgw-tabpanel" role="tabpanel" aria-labelledby="tabbtn-lineups" hidden>
+          <div class="sgw-card">
+            <div class="sgw-card__title">Line-ups</div>
+            <div class="sgw-lineups">
+              {% for side, team in {'home': mc_lineups.home, 'away': mc_lineups.away} %}
+                <div class="sgw-lineups__col">
+                  <div class="sgw-lineups__header">
+                    <div class="sgw-lineups__team">{{ side == 'home' ? match.teams[0].name : match.teams[1].name }}</div>
+                    <div class="sgw-lineups__formation">{{ team.formation ?? '—' }}</div>
+                  </div>
+
+                  <div class="sgw-lineups__meta">
+                    <div>Coach:
+                      {% if team.coach is iterable %}
+                        {{ team.coach.name ?? team.coach.fullName ?? '—' }}
+                      {% else %}
+                        {{ team.coach ?? '—' }}
+                      {% endif %}
+                    </div>
+                  </div>
+
+                  {% if team.players is not empty %}
+                    <ul class="sgw-players">
+                      {% for p in team.players %}
+                        <li class="sgw-player">
+                          {% set photo = p.photo|default(p.image|default(p.headshot|default(p.avatar|default(null)))) %}
+                          {% if photo %}
+                            <img class="sgw-player__photo" src="{{ photo }}" alt="{{ p.name ?? '' }}" loading="lazy" width="28" height="28">
+                          {% else %}
+                            <span class="sgw-player__photo sgw-player__photo--empty" aria-hidden="true"></span>
+                          {% endif %}
+                          <span class="sgw-player__num">{{ p.number is defined ? p.number : '—' }}</span>
+                          <span class="sgw-player__name">{{ p.name ?? '—' }}</span>
+                          {% if p.position %}<span class="sgw-player__pos">{{ p.position }}</span>{% endif %}
+                        </li>
+                      {% endfor %}
+                    </ul>
                   {% else %}
-                    {{ team.coach ?? '—' }}
+                    <div class="sgw-empty">No players data.</div>
                   {% endif %}
                 </div>
-              </div>
-
-              {% if team.players is not empty %}
-                <ul class="sgw-players">
-                  {% for p in team.players %}
-                    <li class="sgw-player">
-                      {% set photo = p.photo|default(p.image|default(p.headshot|default(p.avatar|default(null)))) %}
-                      {% if photo %}
-                        <img class="sgw-player__photo" src="{{ photo }}" alt="{{ p.name ?? '' }}" loading="lazy" width="28" height="28">
-                      {% else %}
-                        <span class="sgw-player__photo sgw-player__photo--empty" aria-hidden="true"></span>
-                      {% endif %}
-                      <span class="sgw-player__num">{{ p.number is defined ? p.number : '—' }}</span>
-                      <span class="sgw-player__name">{{ p.name ?? '—' }}</span>
-                      {% if p.position %}<span class="sgw-player__pos">{{ p.position }}</span>{% endif %}
-                    </li>
-                  {% endfor %}
-                </ul>
-              {% else %}
-                <div class="sgw-empty">No players data.</div>
-              {% endif %}
+              {% endfor %}
             </div>
-          {% endfor %}
+          </div>
         </div>
-      </div>
+      </section>
     </div>
+  </div>
 
-    {# ----- TAB: H2H ----- #}
-    <div id="tab-h2h" class="sgw-tabpanel" role="tabpanel" aria-labelledby="tabbtn-h2h" hidden>
-      <div class="sgw-card">
-        <h3 class="sgw-card__title">Head-to-Head — {{ prev_groups.h2h.title }}</h3>
-        {% if prev_groups.h2h.items %}
-          <ul class="sgw-prev">
-            {% for it in prev_groups.h2h.items %}
-              <li class="sgw-prev__row">
-                <span class="sgw-prev__date">{{ it.date ? (it.date|date('d M Y H:i')) : '' }}</span>
-                <span class="sgw-prev__meta">
-                  {{ it.league }}{% if it.round %} • {{ it.round }}{% endif %}
-                </span>
-                <span class="sgw-prev__score">
-                  {{ it.homeName }} {{ it.score }} {{ it.awayName }}
-                </span>
-                {% if it.venue %}<span class="sgw-prev__venue">• {{ it.venue }}</span>{% endif %}
-              </li>
-            {% endfor %}
-          </ul>
-        {% else %}
-          <p class="sgw-empty">No head-to-head matches in the feed.</p>
-        {% endif %}
-      </div>
-
-      <div class="sgw-card">
-        <h3 class="sgw-card__title">Last matches — {{ prev_groups.t1.teamName }}</h3>
-        {% if prev_groups.t1.items %}
-          <ul class="sgw-prev">
-            {% for it in prev_groups.t1.items %}
-              <li class="sgw-prev__row">
-                <span class="sgw-prev__date">{{ it.date ? (it.date|date('d M Y H:i')) : '' }}</span>
-                <span class="sgw-prev__meta">
-                  {{ it.league }}{% if it.round %} • {{ it.round }}{% endif %}
-                </span>
-                <span class="sgw-prev__score">
-                  {{ it.teamName }} {{ it.score ?? (it.scoreTeam ~ '–' ~ it.scoreOpp) }}
-                  {% if it.oppName %} {{ it.oppName }}{% endif %}
-                  {% if it.homeAway %} <small class="sgw-badge">{{ it.homeAway }}</small>{% endif %}
-                </span>
-                {% if it.venue %}<span class="sgw-prev__venue">• {{ it.venue }}</span>{% endif %}
-              </li>
-            {% endfor %}
-          </ul>
-        {% else %}
-          <p class="sgw-empty">No recent matches.</p>
-        {% endif %}
-      </div>
-
-      <div class="sgw-card">
-        <h3 class="sgw-card__title">Last matches — {{ prev_groups.t2.teamName }}</h3>
-        {% if prev_groups.t2.items %}
-          <ul class="sgw-prev">
-            {% for it in prev_groups.t2.items %}
-              <li class="sgw-prev__row">
-                <span class="sgw-prev__date">{{ it.date ? (it.date|date('d M Y H:i')) : '' }}</span>
-                <span class="sgw-prev__meta">
-                  {{ it.league }}{% if it.round %} • {{ it.round }}{% endif %}
-                </span>
-                <span class="sgw-prev__score">
-                  {{ it.teamName }} {{ it.score ?? (it.scoreTeam ~ '–' ~ it.scoreOpp) }}
-                  {% if it.oppName %} {{ it.oppName }}{% endif %}
-                  {% if it.homeAway %} <small class="sgw-badge">{{ it.homeAway }}</small>{% endif %}
-                </span>
-                {% if it.venue %}<span class="sgw-prev__venue">• {{ it.venue }}</span>{% endif %}
-              </li>
-            {% endfor %}
-          </ul>
-        {% else %}
-          <p class="sgw-empty">No recent matches.</p>
-        {% endif %}
-      </div>
-    </div>
-
-    {# ----- TAB: FORM ----- #}
-    <div id="tab-form" class="sgw-tabpanel" role="tabpanel" aria-labelledby="tabbtn-form" hidden>
-      <div class="sgw-card">
-        <h3 class="sgw-card__title">Form (last 5 matches)</h3>
-        <table class="sgw-table sgw-form">
-          <thead>
-            <tr>
-              <th>#</th><th>Team</th><th>MP</th><th>W</th><th>D</th><th>L</th>
-              <th>G</th><th>GD</th><th>PTS</th><th>FORM</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for r in mc_form %}
-              <tr>
-                <td class="pos">{{ r.pos }}</td>
-                <td class="team">{{ r.teamName }}</td>
-                <td>{{ r.mp }}</td><td>{{ r.w }}</td><td>{{ r.d }}</td><td>{{ r.l }}</td>
-                <td>{{ r.g }}</td><td>{{ r.gd }}</td><td class="pts">{{ r.pts }}</td>
-                <td class="form">
-                  {% for f in r.form %}
-                    <span class="form-badge {{ f|lower }}">{{ f }}</span>
-                  {% endfor %}
-                </td>
-              </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </section>
+  {# фиксированная кнопка #}
+  <button class="sgw-sidebar-trigger" type="button" aria-label="Open countries and leagues">
+      Countries &amp; Leagues
+  <img class="sgw-sidebar-trigger-icon" src="{{ arrow_icon_white }}" alt="" width="20" height="20" loading="lazy" />
+  </button>
 </div>
 
-{# ================== TABS SCRIPT ================== #}
+
+{# ================== TABS SCRIPT (MATCH TABS) — оставляем твой текущий ================== #}
 <script>
   (function () {
     const tabs = document.querySelectorAll('.sgw-tab');
@@ -465,7 +812,7 @@
       });
     });
 
-    const m = location.hash && location.hash.match(/tab=(overview|lineups|h2h|form)/);
+    const m = location.hash && location.hash.match(/tab=(summary|lineups|h2h|standings)/);
     if (m) {
       activate(m[1]);
     } else {
@@ -474,4 +821,57 @@
     }
   })();
 </script>
+
+{# ================== SIDEBAR OPEN/CLOSE (мобайл) ================== #}
+<script>
+  (function () {
+    const body    = document.body;
+    const trigger = document.querySelector('.sgw-sidebar-trigger');
+    const sidebar = document.querySelector('.sgw-catalog__sidebar');
+    const overlay = document.querySelector('.sgw-sidebar-overlay');
+
+    if (!trigger || !sidebar || !overlay) return;
+
+    const open = () => body.classList.add('sgw-sidebar-open');
+    const close = () => body.classList.remove('sgw-sidebar-open');
+    const isOpen = () => body.classList.contains('sgw-sidebar-open');
+
+    trigger.addEventListener('click', () => {
+      isOpen() ? close() : open();
+    });
+
+    overlay.addEventListener('click', close);
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && isOpen()) close();
+    });
+
+    sidebar.addEventListener('click', (e) => {
+      const a = e.target.closest('a');
+      if (a) close();
+    });
+  })();
+</script>
+
+{# ================== SIDEBAR TABS: Pinned / Countries ================== #}
+<script>
+  (function () {
+    const tabs   = document.querySelectorAll('.sgw-sidebar-tab');
+    const panels = document.querySelectorAll('.sgw-sidebar-panel');
+    if (!tabs.length || !panels.length) return;
+
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        const target = tab.dataset.sidebarTab;
+
+        tabs.forEach(t => t.classList.toggle('is-active', t === tab));
+        panels.forEach(p => {
+          const active = p.dataset.sidebarPanel === target;
+          p.classList.toggle('is-active', active);
+        });
+      });
+    });
+  })();
+</script>
+
 

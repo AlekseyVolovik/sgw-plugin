@@ -1,12 +1,24 @@
 {% if pinned_leagues is defined and pinned_leagues|length %}
-    <div class="sgw-catalog__sidebar-block sgw-pinned-leagues">
-        <h3 class="sgw-pinned-leagues__title">📌 Pinned Leagues</h3>
-        <ul class="sgw-pinned-leagues__list">
-            {% for league in pinned_leagues %}
-                <li>
-                    <a href="{{ league.url }}">{{ league.title }}</a>
-                </li>
-            {% endfor %}
-        </ul>
-    </div>
+  <div class="sgw-catalog__sidebar-block sgw-pinned-leagues">
+    <div class="sgw-pinned-leagues__title">
+      <span>Pinned Leagues</span>
+      <img src="{{ pinned_icon }}" alt="" width="16" height="16" class="sgw-pinned-leagues__title-icon" loading="lazy" />
+    </div>    
+    <ul class="sgw-pinned-leagues__list" id="sgw-pinned-list">
+      {% for league in pinned_leagues %}
+        <li>
+          <a href="{{ league.url }}">{{ league.title }}</a>
+        </li>
+      {% endfor %}
+    </ul>
+  </div>
+{% else %}
+  {# Если серверных пинов нет — всё равно выводим пустую оболочку, чтобы было куда добавлять #}
+  <div class="sgw-catalog__sidebar-block sgw-pinned-leagues">
+    <div class="sgw-pinned-leagues__title">
+      <span>Pinned Leagues</span>
+      <img src="{{ pinned_icon }}" alt="" width="16" height="16" class="sgw-pinned-leagues__title-icon" loading="lazy" />
+    </div> 
+    <ul class="sgw-pinned-leagues__list" id="sgw-pinned-list"></ul>
+  </div>
 {% endif %}

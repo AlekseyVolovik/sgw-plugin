@@ -1,69 +1,115 @@
 <div class="sgw-catalog">
-    <div class="sgw-catalog__sidebar">
-        {% include '@blocks/pinned-leagues/pinned-leagues.twig' %}
 
-        {% include '@blocks/filter/leagues-by-country.twig' with {
-            'filters_leagues_by_country': filters_leagues_by_country
-        } %}
+  <div class="sgw-catalog__sidebar">
+    {# Табы для мобильного сайдбара #}
+    <div class="sgw-sidebar-tabs">
+      <button class="sgw-sidebar-tab is-active" data-sidebar-tab="pinned">
+        Pinned Leagues
+      </button>
+      <button class="sgw-sidebar-tab" data-sidebar-tab="countries">
+        Countries
+      </button>
     </div>
-	<div class="sgw-sidebar-overlay" aria-hidden="true"></div>
-    <div class="sgw-catalog__content">
 
-        {% if breadcrumbs %}
-            <nav class="sgw-breadcrumbs" aria-label="Breadcrumb">
-                <ol class="sgw-breadcrumbs__list">
-                    {% for it in breadcrumbs %}
-                    <li class="sgw-breadcrumbs__item">
-                        {% if it.url %}
-                        <a href="{{ it.url }}" class="sgw-breadcrumbs__link">{{ it.label }}</a>
-                        {% else %}
-                        <span class="sgw-breadcrumbs__current">{{ it.label }}</span>
-                        {% endif %}
-                    </li>
-                    {% endfor %}
-                </ol>
-            </nav>
-        {% endif %}
-
-        <div class="sgw-catalog__filters">
-            <div class="sgw-filters__filter-status">
-                <ul class="sgw-filters__status-list">
-                    <li class="sgw-filters__status-item sgw-filters__status-item--{{ 'live' }}{% if active_status == 'live' %} sgw-filters__status-item--active{% endif %} sgw-filters__status-item--live">
-                        <button class="sgw-filters__status-link tab-btn" data-status="live" type="button">Live</button>
-                    </li>
-                    <li class="sgw-filters__status-item sgw-filters__status-item--{{ 'upcoming' }}{% if active_status == 'upcoming' %} sgw-filters__status-item--active{% endif %}">
-                        <button class="sgw-filters__status-link tab-btn" data-status="upcoming" type="button">Upcoming</button>
-                    </li>
-                    <li class="sgw-filters__status-item sgw-filters__status-item--{{ 'finished' }}{% if active_status == 'finished' %} sgw-filters__status-item--active{% endif %}">
-                        <button class="sgw-filters__status-link tab-btn" data-status="finished" type="button">Finished</button>
-                    </li>
-                </ul>
-            </div>
-            <button class="sgw-sidebar-toggle" type="button" aria-label="Open leagues">
-                <span></span>
-            </button>
-        </div>
-        
-        <h2 class="sgw-catalog__title">{{ leagueName }} ({{ countrySlug|capitalize }})</h2>
-
-        <div class="sgw-catalog__events">
-            {% for status, match_cards in match_cards_by_status %}
-                <div class="sgw-catalog__events-item match-group" data-status="{{ status }}" style="{% if status != active_status %}display:none{% endif %}">
-                    {% if match_cards is not empty %}
-                        {% include '@blocks/match-cards/view.twig' with { 'match_cards': match_cards } %}
-                    {% else %}
-                        {% include '@components/no-matches.twig' with {
-                            no_matches_card: {
-                                title: "No matches available",
-                                subtitle: "Please check back later or choose another tab."
-                            }
-                        } %}
-                    {% endif %}
-                </div>
-            {% endfor %}
-        </div>
+    {# Панель "Pinned Leagues" #}
+    <div class="sgw-sidebar-panel is-active" data-sidebar-panel="pinned">
+      {% include '@blocks/pinned-leagues/pinned-leagues.twig' %}
     </div>
+
+    {# Панель "Countries" #}
+    <div class="sgw-sidebar-panel" data-sidebar-panel="countries">
+      {% include '@blocks/filter/leagues-by-country.twig' with {
+        'filters_leagues_by_country': filters.leagues_by_country
+      } %}
+    </div>
+  </div>
+
+  <div class="sgw-sidebar-overlay" aria-hidden="true"></div>
+
+  <div class="sgw-catalog__content">
+    {% if breadcrumbs %}
+      <nav class="sgw-breadcrumbs" aria-label="Breadcrumb">
+        <ol class="sgw-breadcrumbs__list">
+          {% for it in breadcrumbs %}
+            <li class="sgw-breadcrumbs__item">
+              {% if loop.first and bc_football_icon is defined %}
+                <img
+                  src="{{ bc_football_icon }}"
+                  alt=""
+                  class="sgw-breadcrumbs__icon sgw-breadcrumbs__icon--football"
+                />
+              {% endif %}
+
+              {% if it.url %}
+                <a href="{{ it.url }}" class="sgw-breadcrumbs__link">
+                  {{ it.label }}
+                </a>
+              {% else %}
+                <span class="sgw-breadcrumbs__current">
+                  {{ it.label }}
+                </span>
+              {% endif %}
+
+              {% if not loop.last and bc_arrow_icon is defined %}
+                <img
+                  src="{{ bc_arrow_icon }}"
+                  alt=">"
+                  class="sgw-breadcrumbs__separator"
+                />
+              {% endif %}
+            </li>
+          {% endfor %}
+        </ol>
+      </nav>
+    {% endif %}
+
+    <div class="sgw-catalog__filters">
+      <div class="sgw-filters__filter-status">
+        <ul class="sgw-filters__status-list">
+          <li class="sgw-filters__status-item sgw-filters__status-item--live{% if active_status == 'live' %} sgw-filters__status-item--active{% endif %}">
+            <button class="sgw-filters__status-link tab-btn" data-status="live" type="button">Live</button>
+          </li>
+          <li class="sgw-filters__status-item sgw-filters__status-item--upcoming{% if active_status == 'upcoming' %} sgw-filters__status-item--active{% endif %}">
+            <button class="sgw-filters__status-link tab-btn" data-status="upcoming" type="button">Upcoming</button>
+          </li>
+          <li class="sgw-filters__status-item sgw-filters__status-item--finished{% if active_status == 'finished' %} sgw-filters__status-item--active{% endif %}">
+            <button class="sgw-filters__status-link tab-btn" data-status="finished" type="button">Finished</button>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <h2 class="sgw-catalog__title">
+      {{ leagueName }} ({{ countrySlug|capitalize }})
+    </h2>
+
+    <div class="sgw-catalog__events">
+      {% for status, match_cards in match_cards_by_status %}
+        <div class="sgw-catalog__events-item match-group"
+             data-status="{{ status }}"
+             style="{% if status != active_status %}display:none{% endif %}">
+          {% if match_cards is not empty %}
+            {% include '@blocks/match-cards/view.twig' with { 'match_cards': match_cards } %}
+          {% else %}
+            {% include '@components/no-matches.twig' with {
+              no_matches_card: {
+                title: "No matches available",
+                subtitle: "Please check back later or choose another tab."
+              }
+            } %}
+          {% endif %}
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+
+    {# фиксированная кнопка #}
+    <button class="sgw-sidebar-trigger" type="button" aria-label="Open countries and leagues">
+        Countries &amp; Leagues
+        <img class="sgw-sidebar-trigger-icon" src="{{ arrow_icon_white }}" alt="" width="20" height="20" loading="lazy" />
+    </button>
 </div>
+
 
 <script>
     const tabButtons = document.querySelectorAll('.tab-btn');
@@ -89,38 +135,79 @@
         });
     });
 </script>
+
 <script>
-  const body = document.body;
-  const btn  = document.querySelector('.sgw-sidebar-toggle');
+(function () {
+  const body    = document.body;
+  const trigger = document.querySelector('.sgw-sidebar-trigger');
   const sidebar = document.querySelector('.sgw-catalog__sidebar');
   const overlay = document.querySelector('.sgw-sidebar-overlay');
+
+  if (!trigger || !sidebar || !overlay) return;
 
   const open = () => body.classList.add('sgw-sidebar-open');
   const close = () => body.classList.remove('sgw-sidebar-open');
   const isOpen = () => body.classList.contains('sgw-sidebar-open');
 
-  if (btn) btn.addEventListener('click', () => isOpen() ? close() : open());
-  if (overlay) overlay.addEventListener('click', close);
-
-  // Клик вне сайдбара закрывает его
-  document.addEventListener('click', (e) => {
-    if (!isOpen()) return;
-    const clickInsideSidebar = sidebar && sidebar.contains(e.target);
-    const clickOnToggle = btn && btn.contains(e.target);
-    if (!clickInsideSidebar && !clickOnToggle) close();
+  trigger.addEventListener('click', () => {
+    isOpen() ? close() : open();
   });
 
-  // Закрыть по Esc
+  overlay.addEventListener('click', close);
+
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && isOpen()) close();
   });
 
-  // Клик по ссылке внутри сайдбара — закрыть
-  if (sidebar) {
-    sidebar.addEventListener('click', (e) => {
-      const a = e.target.closest('a');
-      if (a) close();
-    });
-  }
+  sidebar.addEventListener('click', (e) => {
+    const a = e.target.closest('a');
+    if (a) close();
+  });
+})();
 </script>
+
+<script>
+(function () {
+  const tabs   = document.querySelectorAll('.sgw-sidebar-tab');
+  const panels = document.querySelectorAll('.sgw-sidebar-panel');
+  if (!tabs.length || !panels.length) return;
+
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      const target = tab.dataset.sidebarTab;
+
+      tabs.forEach(t => t.classList.toggle('is-active', t === tab));
+      panels.forEach(p => {
+        const active = p.dataset.sidebarPanel === target;
+        p.classList.toggle('is-active', active);
+      });
+    });
+  });
+})();
+</script>
+
+<script>
+  // табы статусов (Live / Upcoming / Finished)
+  const tabButtons = document.querySelectorAll('.tab-btn');
+  const groups = document.querySelectorAll('.match-group');
+
+  tabButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const status = btn.getAttribute('data-status');
+
+      document
+        .querySelectorAll('.sgw-filters__status-item')
+        .forEach(li => li.classList.remove('sgw-filters__status-item--active'));
+
+      const li = btn.closest('.sgw-filters__status-item');
+      if (li) li.classList.add('sgw-filters__status-item--active');
+
+      groups.forEach(group => {
+        group.style.display =
+          group.getAttribute('data-status') === status ? 'block' : 'none';
+      });
+    });
+  });
+</script>
+
 

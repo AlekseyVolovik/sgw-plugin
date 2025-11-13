@@ -13,6 +13,7 @@ use SGWPlugin\Classes\Helpers;
  */
 class MatchPageController
 {
+
     /** Клиент SGW для API-вызовов */
     private SGWClient $sgw;
 
@@ -24,6 +25,8 @@ class MatchPageController
 
     /** Текущий URL-слуг матча */
     private ?string $slug;
+
+    private ?string $baseUrl;
 
     /**
      * Глубина поиска завершённых матчей при разрешении события.
@@ -49,10 +52,6 @@ class MatchPageController
     /** @var array<int, array> */
     private array $eventDetailsCache = [];
 
-    // --- КЭШИ ---
-    private const PAGECACHE_GROUP = 'sgw_match_html'; // кэш готового HTML
-    private const DATACACHE_GROUP = 'sgw_match_data'; // кэш «тяжёлых» данных (группы previous и т.п.)
-
     /**
      * Конструктор: инициализация клиента и общих параметров.
      */
@@ -62,6 +61,7 @@ class MatchPageController
         $this->projectId = Fields::get_general_project_id();
         $this->sport     = Fields::get_general_sport();
         $this->slug      = $params['slug'] ?? null;
+        $this->baseUrl   = Fields::get_general_url_catalog_page() ?: 'football';
     }
 
     /* =========================
@@ -83,42 +83,13 @@ class MatchPageController
         $parts = $this->parseSlug();
         if (!$parts) return "<div>Invalid match URL</div>";
 
-        $slugKey      = md5((string)$this->slug);
-        $pageCacheKey = self::PAGECACHE_GROUP . ':html:' . $slugKey;
-        $metaCacheKey = self::PAGECACHE_GROUP . ':meta:' . $slugKey;
-
-        // Если HTML закэширован — ставим мету из кэша и мгновенно отдаём
-        if ($cachedHtml = wp_cache_get($pageCacheKey, self::PAGECACHE_GROUP)) {
-            if ($meta = wp_cache_get($metaCacheKey, self::PAGECACHE_GROUP)) {
-                if (!empty($meta['title']))       \SGWPlugin\Classes\MetaBuilder::setTitle($meta['title']);
-                if (!empty($meta['description'])) \SGWPlugin\Classes\MetaBuilder::setDescription($meta['description']);
-                return $cachedHtml;
-            }
-
-            // Редкий случай: старый HTML-кэш без меты — быстро найдём событие и поставим мету разово
-            $event = $this->resolveEventByParts($parts);
-            if ($event) {
-                $meta = $this->applyMatchMeta($event);
-                // Положим мету с небольшим TTL, чтобы в следующий раз не лезть в API
-                wp_cache_set($metaCacheKey, $meta, self::PAGECACHE_GROUP, 300);
-            }
-            return $cachedHtml;
-        }
-
-        $event = null;
-        $cidFromSlug = $parts['cid'] ?? null;
-
         // 1) Поиск события
         $event = $this->resolveEventByParts($parts);
-
-
         if (!$event) return "<div>Match not found</div>";
 
         // 2) Канонический URL и мета
         $canonical = \SGWPlugin\Classes\MatchUrl::build($event);
-
-        // Установим и сразу получим строки меты, чтобы положить их в кэш
-        $meta = $this->applyMatchMeta($event);
+        $meta = $this->applyMatchMeta($event); // сразу проставляет Title/Description
 
         // 3) Базовая VM + info из Events API
         $match   = $this->buildViewModel($event);
@@ -126,7 +97,9 @@ class MatchPageController
         $details = $eventId ? $this->fetchEventDetails($eventId) : [];
         $match['info'] = $this->extractMatchInfo($details, $match);
 
-        $breadcrumbs = $this->buildBreadcrumbs($event, $match);
+        $breadcrumbs    = $this->buildBreadcrumbs($event, $match);
+        $bcArrowIcon    = sprintf('%s/images/content/arrow-icon-up.svg', SGWPLUGIN_URL_FRONT);
+        $bcFootballIcon = sprintf('%s/images/content/football-icon.svg', SGWPLUGIN_URL_FRONT);
 
         // 4) MatchCentre (сырое событие — только для построения блоков)
         $mc        = $this->fetchMatchCentreEventRaw($event);
@@ -140,7 +113,7 @@ class MatchPageController
         $t1Nm = $event['competitors'][0]['name'] ?? 'Team 1';
         $t2Nm = $event['competitors'][1]['name'] ?? 'Team 2';
 
-        // прогреем кэш имён
+        // прогреем имена на время запроса (не межзапросный кэш)
         $this->cacheTeamName($t1Id, $t1Nm);
         $this->cacheTeamName($t2Id, $t2Nm);
         foreach ($prev as $pe) {
@@ -150,50 +123,134 @@ class MatchPageController
             $this->cacheTeamName($a['id'] ?? null, $a['name'] ?? null);
         }
 
-        $pgCacheKey = self::DATACACHE_GROUP . ':prev_groups:' . ($eventId ?: 0);
-        $previousGroups = wp_cache_get($pgCacheKey, self::DATACACHE_GROUP);
-        if ($previousGroups === false) {
-            $previousGroups = $this->splitPreviousEvents($prev, $t1Id, $t2Id, $t1Nm, $t2Nm);
-            // лайв — 15s, апкаминг — 2 мин, сыгранные — 1 час
-            $statusLc = strtolower((string)($match['status'] ?? ''));
-            $pgTtl = (str_starts_with($statusLc, 'live')) ? 15
-                : (in_array($statusLc, ['upcoming','scheduled'], true) ? 120 : 3600);
-            wp_cache_set($pgCacheKey, $previousGroups, self::DATACACHE_GROUP, $pgTtl);
-        }
-        $scoreStatus    = $this->buildScoreAndStatus($mcEvent);
-        $lineups        = $this->buildLineupsBlock($mcEvent);
-        $formTable      = $this->buildTeamForm($prev, $mcEvent['competitors'] ?? []);
+        // БЕЗ КЭША: всегда пересчитываем previousGroups
+        $previousGroups = $this->splitPreviousEvents($prev, $t1Id, $t2Id, $t1Nm, $t2Nm);
 
-        // 5) Рендер Twig (только необходимые данные)
+        $scoreStatus = $this->buildScoreAndStatus($mcEvent);
+        $lineups     = $this->buildLineupsBlock($mcEvent);
+        $formTable   = $this->buildTeamForm($prev, $mcEvent['competitors'] ?? []);
+        $hlHalves    = $this->splitHighlightsByHalves($mcEvent);
+
+        // Общие иконки
+        $pinnedIcon     = sprintf('%s/images/content/pinn-icon.svg', SGWPLUGIN_URL_FRONT);
+        $arrowIcon      = sprintf('%s/images/content/arrow-icon-up.svg', SGWPLUGIN_URL_FRONT);
+        $arrowIconWhite = sprintf('%s/images/content/arrow-icon-white.svg', SGWPLUGIN_URL_FRONT);
+
+        $iconGoal   = sprintf('%s/images/content/icon-goal.svg', SGWPLUGIN_URL_FRONT);
+        $iconYellow = sprintf('%s/images/content/icon-yellow-card.svg', SGWPLUGIN_URL_FRONT);
+        $iconRed    = sprintf('%s/images/content/icon-red-card.svg', SGWPLUGIN_URL_FRONT);
+        $iconSub    = sprintf('%s/images/content/substitution.svg', SGWPLUGIN_URL_FRONT);
+
+        // Формат filters как на каталоге/стране/лиге
+        $filters = [
+            'leagues_by_country' => $this->getGroupedLeaguesByCountry(),
+        ];
+
         $html = Twig::render('pages/match/view.twig', [
-            'match'       => $match,
-            'breadcrumbs' => $breadcrumbs,
-            'canonical'   => $canonical,
-            'mc_args'     => $mc['args'] ?? [],
-            'mc_payload'  => $mc['response'] ?? [],
-            'mc_event'    => $mcEvent,
-            'mc_score'    => $scoreStatus['breakdown'] ?? [],
-            'mc_status'   => $scoreStatus['status'] ?? [],
-            'mc_lineups'  => $lineups ?? [],
-            'mc_form'     => $formTable ?? [],
-            'prev_groups' => $previousGroups,
+            'match'                    => $match,
+            'breadcrumbs'              => $breadcrumbs,
+            'canonical'                => $canonical,
+            'mc_args'                  => $mc['args'] ?? [],
+            'mc_payload'               => $mc['response'] ?? [],
+            'mc_event'                 => $mcEvent,
+            'mc_score'                 => $scoreStatus['breakdown'] ?? [],
+            'mc_status'                => $scoreStatus['status'] ?? [],
+            'mc_lineups'               => $lineups ?? [],
+            'mc_form'                  => $formTable ?? [],
+            'prev_groups'              => $previousGroups,
+            'mc_highlights_halves'     => $hlHalves,
+            'bc_arrow_icon'            => $bcArrowIcon,
+            'bc_football_icon'         => $bcFootballIcon,
+
+            'filters'                  => $filters,
+            'pinned_leagues'           => $this->getPinnedLeagues(),
+
+            'pinned_icon'              => $pinnedIcon,
+            'arrow_icon'               => $arrowIcon,
+            'arrow_icon_white'         => $arrowIconWhite,
+            'icon_goal'                => $iconGoal,
+            'icon_yellow'              => $iconYellow,
+            'icon_red'                 => $iconRed,
+            'icon_sub'                 => $iconSub,
         ]);
 
-        // TTL по статусу матча
-        $statusLc = strtolower((string)($match['status'] ?? ''));
-        $ttl = match (true) {
-            str_starts_with($statusLc, 'live')               => 15,             // лайв — 15 сек
-            in_array($statusLc, ['upcoming','scheduled'])    => 300,            // будущее — 5 мин
-            default                                           => DAY_IN_SECONDS  // сыгран — сутки
-        };
-
-        wp_cache_set($pageCacheKey, $html, self::PAGECACHE_GROUP, $ttl);
-
-        // синхронно кэшируем мету, чтобы при следующем хите HTML не трогать API
-        $metaCacheKey = self::PAGECACHE_GROUP . ':meta:' . md5((string)$this->slug);
-        wp_cache_set($metaCacheKey, $meta, self::PAGECACHE_GROUP, $ttl);
-
         return $html;
+    }
+
+    private function getGroupedLeaguesByCountry(): array
+    {
+        $result = [];
+
+        if (!$this->projectId || !$this->sport) {
+            return $result;
+        }
+
+        $response = $this->sgw->api->matchcentre->getMatchCentreCategories($this->projectId, $this->sport);
+
+        if (!isset($response['data'])) {
+            return $result;
+        }
+
+        foreach ($response['data'] as $item) {
+            if (($item['entityType'] ?? '') !== 'Competition') {
+            continue;
+            }
+
+            $segments = $item['urlSegments'] ?? [];
+            if (count($segments) < 2) {
+                continue;
+            }
+
+            $country = $segments[0];
+            $league  = $segments[1];
+
+            $result[$country][] = [
+                'title' => $item['name'],
+                'url'   => sprintf('/%s/%s/%s/', $this->baseUrl, $country, $league),
+            ];
+        }
+
+        return $result;
+    }
+
+    private function getPinnedLeagues(): array
+    {
+        $result = [];
+        $ids    = Helpers::getPinnedLeagueIds();
+
+        if (!$this->projectId || !$this->sport || empty($ids)) {
+            return $result;
+        }
+
+        $response = $this->sgw->api->matchcentre->getMatchCentreCategories($this->projectId, $this->sport);
+
+        if (!isset($response['data'])) {
+            return $result;
+        }
+
+        foreach ($response['data'] as $item) {
+            if (($item['entityType'] ?? '') !== 'Competition') {
+                continue;
+            }
+            if (!in_array($item['entityId'], $ids, true)) {
+                continue;
+            }
+
+            $segments = $item['urlSegments'] ?? [];
+            if (count($segments) < 2) {
+                continue;
+            }
+
+            $country = $segments[0];
+            $league  = $segments[1];
+
+            $result[] = [
+                'title' => $item['name'],
+                'url'   => sprintf('/%s/%s/%s/', $this->baseUrl, $country, $league),
+            ];
+        }
+
+        return $result;
     }
 
     /**
@@ -976,5 +1033,31 @@ class MatchPageController
         }
 
         return $out;
+    }
+
+    /** Разбить highlights на 1-й и 2-й тайм по time.elapsed (<=45 → 1st, >45 → 2nd). */
+    private function splitHighlightsByHalves(array $mcEvent): array
+    {
+        $details = $mcEvent['details'] ?? [];
+        $hl      = $details['highlights'] ?? [];
+        $home    = is_array($hl['home'] ?? null) ? $hl['home'] : [];
+        $away    = is_array($hl['away'] ?? null) ? $hl['away'] : [];
+
+        $split = function(array $list): array {
+            $h1 = []; $h2 = [];
+            foreach ($list as $ev) {
+                $elapsed = (int)($ev['time']['elapsed'] ?? 0);
+                // 45+X обычно передаётся как elapsed=45 и time.extra>0 — это тоже 1-й тайм.
+                // Всё, что строго >45 — во 2-й тайм. (ET тоже попадёт во 2-й — по задаче нужно только 2 тайма)
+                if ($elapsed <= 45) $h1[] = $ev;
+                else                $h2[] = $ev;
+            }
+            return ['h1' => $h1, 'h2' => $h2];
+        };
+
+        return [
+            'home' => $split($home),
+            'away' => $split($away),
+        ];
     }
 }

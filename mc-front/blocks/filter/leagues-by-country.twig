@@ -1,10 +1,12 @@
 {% if filters_leagues_by_country %}
     <div class="sgw-filters__filter-countries">
+        <div class="sgw-filters__filter-countries-title">Countries</div>
         {% for country, leagues in filters_leagues_by_country %}
             <div class="sgw-filters__country js-country">
                 <div class="sgw-filter__country-details js-country-toggle">
                     <div class="sgw-filter__country-title">
                         {{ country|capitalize }}
+                        <img src="{{ arrow_icon }}" alt="" width="18" height="18" class="sgw-filter__country-title-icon" loading="lazy" />
                     </div>
                     <ul class="sgw-filter__leagues js-league-list">
                         {% for league in leagues %}

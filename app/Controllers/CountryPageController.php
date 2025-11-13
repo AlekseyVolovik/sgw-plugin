@@ -150,40 +150,51 @@ class CountryPageController
             return "<div>Invalid Country Page</div>";
         }
 
-        // мета
+        // Мета
         $templateTitle = MetaBuilder::getTemplate('football_country', 'title');
         if ($templateTitle) {
             MetaBuilder::setTitle(MetaBuilder::buildMeta($templateTitle, [
-                'country' => ucfirst($this->countrySlug),
-                'site_name' => get_bloginfo('name')
+                'country'   => ucfirst($this->countrySlug),
+                'site_name' => get_bloginfo('name'),
             ]));
         }
 
         $templateDesc = MetaBuilder::getTemplate('football_country', 'description');
         if ($templateDesc) {
             MetaBuilder::setDescription(MetaBuilder::buildMeta($templateDesc, [
-                'country' => ucfirst($this->countrySlug),
-                'site_name' => get_bloginfo('name')
+                'country'   => ucfirst($this->countrySlug),
+                'site_name' => get_bloginfo('name'),
             ]));
         }
 
         $competitionIds = $this->getCompetitionIdsForCountry();
-        if (empty($competitionIds)) return "<div>No competitions for country</div>";
+        if (empty($competitionIds)) {
+            return "<div>No competitions for country</div>";
+        }
 
-        // какие статусы собираем (если передан конкретный — только его)
+        // какие статусы собираем
         $buckets = $this->status
-            ? [$this->status => ($this->status === 'live' ? ['status'=>'live'] : ['period'=>$this->status])]
-            : ['live'=>['status'=>'live'], 'upcoming'=>['period'=>'upcoming'], 'finished'=>['period'=>'finished']];
+            ? [
+                $this->status => (
+                    $this->status === 'live'
+                        ? ['status' => 'live']
+                        : ['period' => $this->status]
+                )
+            ]
+            : [
+                'live'     => ['status' => 'live'],
+                'upcoming' => ['period' => 'upcoming'],
+                'finished' => ['period' => 'finished'],
+            ];
 
-        $matchLists = ['live'=>[], 'upcoming'=>[], 'finished'=>[]];
-        $seen = []; // для дедупликации
+        $matchLists = ['live' => [], 'upcoming' => [], 'finished' => []];
+        $seen = [];
 
         foreach ($buckets as $bucket => $baseParams) {
             foreach ($competitionIds as $competitionId) {
                 $params = ['competitionId' => $competitionId] + $baseParams;
 
-                // если выбран конкретный день (для upcoming/finished)
-                if (!empty($this->date) && in_array($bucket, ['upcoming','finished'], true)) {
+                if (!empty($this->date) && in_array($bucket, ['upcoming', 'finished'], true)) {
                     $params['fromDate'] = $this->date;
                     $params['toDate']   = $this->date;
                 }
@@ -192,8 +203,9 @@ class CountryPageController
                 if (empty($res['success']) || empty($res['data']['data'])) continue;
 
                 foreach ($res['data']['data'] as $event) {
-                    // привяжем competitionId на всякий случай
-                    if (empty($event['competitionId'])) $event['competitionId'] = $competitionId;
+                    if (empty($event['competitionId'])) {
+                        $event['competitionId'] = $competitionId;
+                    }
 
                     $key = $this->makeEventKey($event);
                     if ($key && isset($seen[$key])) continue;
@@ -204,7 +216,7 @@ class CountryPageController
             }
         }
 
-        // сортировки как в лиге
+        // сортировки
         $sortByDateAsc = function(array $a, array $b): int {
             $da = $a['date_iso'] ?? ($a['datetime']['attr'] ?? null) ?? null;
             $db = $b['date_iso'] ?? ($b['datetime']['attr'] ?? null) ?? null;
@@ -214,28 +226,49 @@ class CountryPageController
             return -$sortByDateAsc($a, $b);
         };
 
-        if (!empty($matchLists['upcoming'])) usort($matchLists['upcoming'], $sortByDateAsc);
-        if (!empty($matchLists['finished'])) usort($matchLists['finished'], $sortByDateDesc);
+        if (!empty($matchLists['upcoming'])) {
+            usort($matchLists['upcoming'], $sortByDateAsc);
+        }
+        if (!empty($matchLists['finished'])) {
+            usort($matchLists['finished'], $sortByDateDesc);
+        }
 
-        // лимит карточек (как у вас было)
+        // лимиты (как было)
         $matchLists['upcoming'] = array_slice($matchLists['upcoming'], 0, 15);
         $matchLists['finished'] = array_slice($matchLists['finished'], 0, 15);
 
-        // авто-активная вкладка
+        // активный таб
         $active = $this->status ?: 'live';
         if ($active === 'live' && empty($matchLists['live'])) {
             $active = !empty($matchLists['upcoming']) ? 'upcoming' : 'finished';
         }
 
-        $breadcrumbs = $this->buildBreadcrumbs();
+        $breadcrumbs    = $this->buildBreadcrumbs();
+        $bcArrowIcon    = sprintf('%s/images/content/arrow-icon-up.svg', SGWPLUGIN_URL_FRONT);
+        $bcFootballIcon = sprintf('%s/images/content/football-icon.svg', SGWPLUGIN_URL_FRONT);
+
+        // Иконки
+        $pinnedIcon     = sprintf('%s/images/content/pinn-icon.svg', SGWPLUGIN_URL_FRONT);
+        $arrowIcon      = sprintf('%s/images/content/arrow-icon-up.svg', SGWPLUGIN_URL_FRONT);
+        $arrowIconWhite = sprintf('%s/images/content/arrow-icon-white.svg', SGWPLUGIN_URL_FRONT);
+
+        // Структура filters — как в каталоге/лиге
+        $filters = [
+            'leagues_by_country' => $this->getGroupedLeaguesByCountry(),
+        ];
 
         return Twig::render('pages/country/view.twig', [
-            'countrySlug'                => $this->countrySlug,
-            'filters_leagues_by_country' => $this->getGroupedLeaguesByCountry(),
-            'match_cards_by_status'      => $matchLists,
-            'active_status'              => $active,
-            'pinned_leagues'             => $this->getPinnedLeagues(),
-            'breadcrumbs'                => $breadcrumbs,
+            'countrySlug'             => $this->countrySlug,
+            'filters'                 => $filters,
+            'match_cards_by_status'   => $matchLists,
+            'active_status'           => $active,
+            'pinned_leagues'          => $this->getPinnedLeagues(),
+            'breadcrumbs'             => $breadcrumbs,
+            'pinned_icon'             => $pinnedIcon,
+            'arrow_icon'              => $arrowIcon,
+            'arrow_icon_white'        => $arrowIconWhite,
+            'bc_arrow_icon'           => $bcArrowIcon,
+            'bc_football_icon'        => $bcFootballIcon,
         ]);
     }
 }

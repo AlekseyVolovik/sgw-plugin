@@ -36,10 +36,12 @@ class CatalogController
     private function getFilters(): array
     {
         return [
-            'days' => $this->getFiltersDay(),
-            'status' => $this->getFiltersStatus(),
+            'combined' => $this->getFiltersCombined(),
             'calendar' => $this->getFiltersCalendar(),
             'leagues_by_country' => $this->getGroupedLeaguesByCountry(),
+            // (опционально) оставим старые для обратной совместимости, но в шаблон их больше не прокидываем:
+            // 'status' => $this->getFiltersStatus(),
+            // 'days'   => $this->getFiltersDay(),
         ];
     }
 
@@ -95,30 +97,37 @@ class CatalogController
 
         if (!empty($response['success']) && !empty($response['data']['data'])) {
             foreach ($response['data']['data'] as $event) {
-                $formattedDate = isset($event['date']) ? (new DateTime($event['date']))->format('d M, Y') : 'Unknown Date';
+                $formattedDate = isset($event['date'])
+                    ? (new DateTime($event['date']))->format('d M, Y')
+                    : 'Unknown Date';
 
                 $country = $event['league'] ?? ($event['urlSegments'][0] ?? 'Unknown Country');
                 $country = ucfirst(str_replace('-', ' ', $country));
-
                 $league = $event['competition'] ?? 'Unknown League';
 
                 $groupKey = "{$country}|{$league}|{$formattedDate}";
 
-                $groups[$groupKey][] = $this->getEventCardContent($event, 'finished');
+                if (!isset($groups[$groupKey]['_pin'])) {
+                    $groups[$groupKey]['_pin'] = $this->buildPinMetaFromEvent($event);
+                }
+
+                $groups[$groupKey]['cards'][] = $this->getEventCardContent($event, 'finished');
             }
         }
 
         ksort($groups);
 
         $result = [];
-
-        foreach ($groups as $key => $matchCards) {
+        foreach ($groups as $key => $pack) {
             [$country, $league, $formattedDate] = explode('|', $key);
 
             $result[] = [
                 'title_country_league' => "{$country}: {$league}",
-                'title_date' => $formattedDate,
-                'match_cards' => $matchCards,
+                'title_country'        => $country,
+                'title_league'         => $league,
+                'title_date'           => $formattedDate,
+                'match_cards'          => $pack['cards'] ?? [],
+                'pin'                  => $pack['_pin'] ?? ['id'=>null,'slug'=>null,'title'=>null,'url'=>null],
             ];
         }
 
@@ -129,12 +138,12 @@ class CatalogController
     {
         if (!$this->projectId || !$this->sport) return [];
 
-        $tabs = [];
-
         $date = date('Y-m-d');
         $formattedDate = date('d M, Y');
 
-        // --- UPCOMING TODAY ---
+        $groups = [];
+
+        // UPCOMING TODAY
         $upcomingResponse = $this->sgw->api->matchcentre->getMatchCentreEvents(
             $this->projectId,
             $this->sport,
@@ -142,8 +151,6 @@ class CatalogController
         );
 
         if (!empty($upcomingResponse['success']) && !empty($upcomingResponse['data']['data'])) {
-            $groups = [];
-
             foreach ($upcomingResponse['data']['data'] as $event) {
                 $country = $event['league'] ?? ($event['urlSegments'][0] ?? 'Unknown Country');
                 $country = ucfirst(str_replace('-', ' ', $country));
@@ -151,23 +158,15 @@ class CatalogController
 
                 $groupKey = "{$country}|{$league}|{$formattedDate}";
 
-                $groups[$groupKey][] = $this->getEventCardContent($event, 'upcoming');
-            }
+                if (!isset($groups[$groupKey]['_pin'])) {
+                    $groups[$groupKey]['_pin'] = $this->buildPinMetaFromEvent($event);
+                }
 
-            ksort($groups);
-
-            foreach ($groups as $key => $matchCards) {
-                [$country, $league, $dateText] = explode('|', $key);
-
-                $tabs[] = [
-                    'title_country_league' => "{$country}: {$league}",
-                    'title_date' => $dateText,
-                    'match_cards' => $matchCards,
-                ];
+                $groups[$groupKey]['cards'][] = $this->getEventCardContent($event, 'upcoming');
             }
         }
 
-        // --- FINISHED TODAY ---
+        // FINISHED TODAY
         $finishedResponse = $this->sgw->api->matchcentre->getMatchCentreEvents(
             $this->projectId,
             $this->sport,
@@ -175,8 +174,6 @@ class CatalogController
         );
 
         if (!empty($finishedResponse['success']) && !empty($finishedResponse['data']['data'])) {
-            $groups = [];
-
             foreach ($finishedResponse['data']['data'] as $event) {
                 $country = $event['league'] ?? ($event['urlSegments'][0] ?? 'Unknown Country');
                 $country = ucfirst(str_replace('-', ' ', $country));
@@ -184,20 +181,28 @@ class CatalogController
 
                 $groupKey = "{$country}|{$league}|{$formattedDate}";
 
-                $groups[$groupKey][] = $this->getEventCardContent($event, 'finished');
+                if (!isset($groups[$groupKey]['_pin'])) {
+                    $groups[$groupKey]['_pin'] = $this->buildPinMetaFromEvent($event);
+                }
+
+                $groups[$groupKey]['cards'][] = $this->getEventCardContent($event, 'finished');
             }
+        }
 
-            ksort($groups);
+        ksort($groups);
 
-            foreach ($groups as $key => $matchCards) {
-                [$country, $league, $dateText] = explode('|', $key);
+        $tabs = [];
+        foreach ($groups as $key => $pack) {
+            [$country, $league, $dateText] = explode('|', $key);
 
-                $tabs[] = [
-                    'title_country_league' => "{$country}: {$league}",
-                    'title_date' => $dateText,
-                    'match_cards' => $matchCards,
-                ];
-            }
+            $tabs[] = [
+                'title_country_league' => "{$country}: {$league}",
+                'title_country'        => $country,
+                'title_league'         => $league,
+                'title_date'           => $dateText,
+                'match_cards'          => $pack['cards'] ?? [],
+                'pin'                  => $pack['_pin'] ?? ['id'=>null,'slug'=>null,'title'=>null,'url'=>null],
+            ];
         }
 
         return $tabs;
@@ -226,20 +231,27 @@ class CatalogController
 
                 $groupKey = "{$country}|{$league}|{$formattedDate}";
 
-                $groups[$groupKey][] = $this->getEventCardContent($event, 'upcoming');
+                if (!isset($groups[$groupKey]['_pin'])) {
+                    $groups[$groupKey]['_pin'] = $this->buildPinMetaFromEvent($event);
+                }
+
+                $groups[$groupKey]['cards'][] = $this->getEventCardContent($event, 'upcoming');
             }
         }
 
         ksort($groups);
 
         $result = [];
-        foreach ($groups as $key => $matchCards) {
+        foreach ($groups as $key => $pack) {
             [$country, $league, $dateText] = explode('|', $key);
 
             $result[] = [
                 'title_country_league' => "{$country}: {$league}",
-                'title_date' => $dateText,
-                'match_cards' => $matchCards,
+                'title_country'        => $country,
+                'title_league'         => $league,
+                'title_date'           => $dateText,
+                'match_cards'          => $pack['cards'] ?? [],
+                'pin'                  => $pack['_pin'] ?? ['id'=>null,'slug'=>null,'title'=>null,'url'=>null],
             ];
         }
 
@@ -260,16 +272,16 @@ class CatalogController
 
         if (!empty($response['success']) && !empty($response['data']['data'])) {
             foreach ($response['data']['data'] as $event) {
-                // Получение страны и лиги
                 $country = $event['league'] ?? ($event['urlSegments'][0] ?? 'Unknown Country');
                 $country = ucfirst(str_replace('-', ' ', $country));
-
-                $league = $event['competition'] ?? 'Unknown League';
-
-                // Ключ группировки
+                $league  = $event['competition'] ?? 'Unknown League';
                 $groupKey = "{$country}|{$league}";
 
-                $groups[$groupKey][] = $this->getEventCardContent($event, 'live');
+                if (!isset($groups[$groupKey]['_pin'])) {
+                    $groups[$groupKey]['_pin'] = $this->buildPinMetaFromEvent($event);
+                }
+
+                $groups[$groupKey]['cards'][] = $this->getEventCardContent($event, 'live');
             }
         }
 
@@ -277,13 +289,16 @@ class CatalogController
 
         $result = [];
 
-        foreach ($groups as $key => $matchCards) {
+        foreach ($groups as $key => $pack) {
             [$country, $league] = explode('|', $key);
 
             $result[] = [
                 'title_country_league' => "{$country}: {$league}",
-                'title_date' => '', // нет даты у live
-                'match_cards' => $matchCards,
+                'title_country'        => $country,
+                'title_league'         => $league,
+                'title_date'           => '',
+                'match_cards'          => $pack['cards'] ?? [],
+                'pin'                  => $pack['_pin'] ?? ['id'=>null,'slug'=>null,'title'=>null,'url'=>null],
             ];
         }
 
@@ -294,48 +309,51 @@ class CatalogController
     {
         if (!$this->projectId || !$this->sport) return [];
 
-        $params = ['period' => 'upcoming'];
+        // если дата не передана — берём сегодня
+        $targetDate = $this->date ?: date('Y-m-d');
 
-        if ($this->date) {
-            $params['fromDate'] = $this->date;
-            $params['toDate'] = $this->date;
-        }
+        $params = [
+            'period'   => 'upcoming',
+            'fromDate' => $targetDate,
+            'toDate'   => $targetDate,
+        ];
 
         $response = $this->sgw->api->matchcentre->getMatchCentreEvents($this->projectId, $this->sport, $params);
 
         $groups = [];
-
         if (!empty($response['success']) && !empty($response['data']['data'])) {
-            foreach ($response['data']['data'] as $event) {
-                // Получаем дату
-                $eventDate = isset($event['date']) ? (new DateTime($event['date']))->format('Y-m-d') : '0000-00-00';
-                $formattedDate = isset($event['date']) ? (new DateTime($event['date']))->format('d M, Y') : 'Unknown Date';
+            $formattedDate = date('d M, Y', strtotime($targetDate));
 
-                // Получаем страну и лигу
+            foreach ($response['data']['data'] as $event) {
                 $country = $event['league'] ?? ($event['urlSegments'][0] ?? 'Unknown Country');
                 $country = ucfirst(str_replace('-', ' ', $country));
+                $league  = $event['competition'] ?? 'Unknown League';
 
-                $league = $event['competition'] ?? 'Unknown League';
+                $groupKey = "{$targetDate}|{$country}|{$league}|{$formattedDate}";
 
-                // Ключ с разделением
-                $groupKey = "{$eventDate}|{$country}|{$league}|{$formattedDate}";
+                // meta для pin — один раз на группу
+                if (!isset($groups[$groupKey]['_pin'])) {
+                    $groups[$groupKey]['_pin'] = $this->buildPinMetaFromEvent($event);
+                }
 
-                $groups[$groupKey][] = $this->getEventCardContent($event, 'upcoming');
+                // карточки матчей
+                $groups[$groupKey]['cards'][] = $this->getEventCardContent($event, 'upcoming');
             }
         }
 
-        // Сортировка по дате
         ksort($groups);
 
         $result = [];
-
-        foreach ($groups as $key => $matchCards) {
-            [$eventDate, $country, $league, $dateText] = explode('|', $key);
+        foreach ($groups as $key => $pack) {
+            [, $country, $league, $dateText] = explode('|', $key);
 
             $result[] = [
                 'title_country_league' => "{$country}: {$league}",
-                'title_date' => $dateText,
-                'match_cards' => $matchCards,
+                'title_country'        => $country,
+                'title_league'         => $league,
+                'title_date'           => $dateText,
+                'match_cards'          => $pack['cards'] ?? [],
+                'pin'                  => $pack['_pin'] ?? ['id'=>null,'slug'=>null,'title'=>null,'url'=>null],
             ];
         }
 
@@ -346,44 +364,51 @@ class CatalogController
     {
         if (!$this->projectId || !$this->sport) return [];
 
-        $params = ['period' => 'finished'];
+        // если дата не передана — берём сегодня
+        $targetDate = $this->date ?: date('Y-m-d');
 
-        if ($this->date) {
-            $params['fromDate'] = $this->date;
-            $params['toDate'] = $this->date;
-        }
+        $params = [
+            'period'   => 'finished',
+            'fromDate' => $targetDate,
+            'toDate'   => $targetDate,
+        ];
 
         $response = $this->sgw->api->matchcentre->getMatchCentreEvents($this->projectId, $this->sport, $params);
 
         $groups = [];
-
         if (!empty($response['success']) && !empty($response['data']['data'])) {
-            foreach ($response['data']['data'] as $event) {
-                // Дата
-                $formattedDate = isset($event['date']) ? (new DateTime($event['date']))->format('d M, Y') : 'Unknown Date';
+            $formattedDate = date('d M, Y', strtotime($targetDate));
 
-                // Страна и лига
+            foreach ($response['data']['data'] as $event) {
                 $country = $event['league'] ?? ($event['urlSegments'][0] ?? 'Unknown Country');
                 $country = ucfirst(str_replace('-', ' ', $country));
+                $league  = $event['competition'] ?? 'Unknown League';
 
-                $league = $event['competition'] ?? 'Unknown League';
-
-                // Ключ: дата + страна + лига
                 $groupKey = "{$country}|{$league}|{$formattedDate}";
 
-                $groups[$groupKey][] = $this->getEventCardContent($event, 'finished');
+                // meta для pin — один раз на группу
+                if (!isset($groups[$groupKey]['_pin'])) {
+                    $groups[$groupKey]['_pin'] = $this->buildPinMetaFromEvent($event);
+                }
+
+                // карточки матчей
+                $groups[$groupKey]['cards'][] = $this->getEventCardContent($event, 'finished');
             }
         }
 
-        $result = [];
+        ksort($groups);
 
-        foreach ($groups as $key => $matchCards) {
+        $result = [];
+        foreach ($groups as $key => $pack) {
             [$country, $league, $dateText] = explode('|', $key);
 
             $result[] = [
                 'title_country_league' => "{$country}: {$league}",
-                'title_date' => $dateText,
-                'match_cards' => $matchCards,
+                'title_country'        => $country,
+                'title_league'         => $league,
+                'title_date'           => $dateText,
+                'match_cards'          => $pack['cards'] ?? [],
+                'pin'                  => $pack['_pin'] ?? ['id'=>null,'slug'=>null,'title'=>null,'url'=>null],
             ];
         }
 
@@ -438,31 +463,127 @@ class CatalogController
         ];
     }
 
-    private function getFiltersCalendar(): array
+    private function getFiltersCombined(): array
     {
-        if ($this->status === 'upcoming' || $this->status === 'finished') {
-            $dates = Helpers::getDatesFromTodayWithRange($this->status === 'upcoming' ? 'next' : 'previous');
-            $calendarIcon = sprintf('%s/images/content/calendar-icon.png', SGWPLUGIN_URL_FRONT);
+        // 1) Статусы как есть
+        $status = $this->getFiltersStatus(); // ['url','title','state','class?']
 
-            $activeSet = false;
-            foreach ($dates as $key => $date) {
-                $isActive = $date['full_date'] === $this->date;
+        // 2) Дни → привести к формату статуса
+        $daysRaw = $this->getFiltersDay();   // ['url','title','state']
+        $days = array_map(function($d){
+            return [
+                'url'   => $d['url']   ?? '#',
+                'title' => $d['title'] ?? '',
+                'state' => (!empty($d['state']) && $d['state'] === 'active') ? 'active' : null,
+                'class' => 'day', // можно пометить классом, если нужно стилизовать отдельно
+            ];
+        }, $daysRaw);
 
-                $dates[$key]['url'] = "/$this->baseUrl/$this->status/{$date['full_date']}/";
-                $dates[$key]['active'] = $isActive;
-                $dates[$key]['icon'] = $calendarIcon;
+        // 3) Единое правило активного:
+        // - если задан $this->period (yesterday/today/tomorrow) → делаем активным соответствующий день
+        // - иначе если задан $this->status → активируем соответствующий статус
+        // - иначе активным будет 'All'
+        $activeApplied = false;
 
-                if ($isActive) $activeSet = true;
+        if (in_array($this->period, ['yesterday','today','tomorrow'], true)) {
+            foreach ($status as &$s) $s['state'] = null; // снимаем актив со статусов
+            foreach ($days as &$d) {
+                $isActive = false;
+                if ($this->period === 'yesterday' && stripos($d['title'], 'yesterday') !== false) $isActive = true;
+                if ($this->period === 'today'     && stripos($d['title'], 'today')     !== false) $isActive = true;
+                if ($this->period === 'tomorrow'  && stripos($d['title'], 'tomorrow')  !== false) $isActive = true;
+                $d['state'] = $isActive ? 'active' : null;
+                if ($isActive) $activeApplied = true;
             }
+            unset($s, $d);
+        } elseif (in_array($this->status, [null,'live','upcoming','finished'], true)) {
+            // Обнулим дни
+            foreach ($days as &$d) $d['state'] = null;
+            unset($d);
 
-            if (!$activeSet && count($dates) > 0) {
-                $dates[0]['active'] = true;
+            // Проставим актив на нужный статус
+            foreach ($status as &$s) {
+                $isActive = (
+                    ($this->status === null      && $s['title'] === 'All') ||
+                    ($this->status === 'live'    && $s['title'] === 'Live') ||
+                    ($this->status === 'upcoming'&& $s['title'] === 'Upcoming') ||
+                    ($this->status === 'finished'&& $s['title'] === 'Finished')
+                );
+                $s['state'] = $isActive ? 'active' : null;
+                if ($isActive) $activeApplied = true;
             }
-
-            return $dates;
+            unset($s);
         }
 
-        return [];
+        // На всякий случай: если по каким-то причинам ничего не активировалось — активируем "All"
+        if (!$activeApplied) {
+            foreach ($status as &$s) {
+                $s['state'] = ($s['title'] === 'All') ? 'active' : null;
+            }
+            foreach ($days as &$d) $d['state'] = null;
+            unset($s, $d);
+        }
+
+        // 4) Порядок: сначала статусы, затем дни (можно поменять при желании)
+        return array_merge($status, $days);
+    }
+
+    private function getFiltersCalendar(): array
+    {
+        if (!$this->baseUrl || !$this->sport || !$this->projectId) {
+            return [];
+        }
+
+        $calendarIcon = sprintf('%s/images/content/calendar-icon.svg', SGWPLUGIN_URL_FRONT);
+        $arrowIcon    = sprintf('%s/images/content/arrow-icon-up.svg', SGWPLUGIN_URL_FRONT);
+
+        $today      = new \DateTimeImmutable('today');
+        $todayStr   = $today->format('Y-m-d');
+        $activeDate = $this->date ?: $todayStr;
+
+        $dates = [];
+
+        // -10 ... +10 дней относительно сегодня
+        for ($i = -10; $i <= 10; $i++) {
+            $dt = $today->modify(($i >= 0 ? '+' : '') . $i . ' days');
+            $full = $dt->format('Y-m-d');
+
+            // Формат: 25/09 TH
+            $label = $dt->format('d/m') . ' ' . strtoupper($dt->format('D'));
+
+            // В прошлое → finished, сегодня/будущее → upcoming
+            $targetStatus = ($full >= $todayStr) ? 'upcoming' : 'finished';
+
+            $dates[] = [
+                'full_date'   => $full,
+                'url'         => "/{$this->baseUrl}/{$targetStatus}/{$full}/",
+                'active'      => ($full === $activeDate),
+                'icon'        => $calendarIcon,
+                'arrow_icon'  => $arrowIcon,
+                'label'       => $label,
+            ];
+        }
+
+        // Гарантируем, что хоть одна дата активна
+        $hasActive = false;
+        foreach ($dates as $d) {
+            if (!empty($d['active'])) {
+                $hasActive = true;
+                break;
+            }
+        }
+
+        if (!$hasActive) {
+            foreach ($dates as &$d) {
+                if ($d['full_date'] === $todayStr) {
+                    $d['active'] = true;
+                    break;
+                }
+            }
+            unset($d);
+        }
+
+        return $dates;
     }
 
     private function getGroupedLeaguesByCountry(): array
@@ -523,6 +644,35 @@ class CatalogController
         return $result;
     }
 
+    /** Собираем meta для "pin league" из события */
+    private function buildPinMetaFromEvent(array $event): array
+    {
+        $leagueUrl = $event['leagueUrl'] ?? null;       // country slug
+        $compUrl   = $event['competitionUrl'] ?? null;  // league slug
+        $title     = $event['competition'] ?? null;
+        $cid = null;
+
+        if (!empty($event['competitionId'])) {
+            $cid = (int)$event['competitionId'];
+        } elseif (!empty($event['competition']['id'])) {
+            $cid = (int)$event['competition']['id'];
+        } elseif (!empty($event['competitionEntityId'])) {
+            $cid = (int)$event['competitionEntityId'];
+        }
+
+        $slug = ($leagueUrl && $compUrl) ? ($leagueUrl . '/' . $compUrl) : null;
+        $url  = ($leagueUrl && $compUrl && $this->baseUrl)
+            ? ("/{$this->baseUrl}/{$leagueUrl}/{$compUrl}/")
+            : null;
+
+        return [
+            'id'    => $cid ?: null,
+            'slug'  => $slug,
+            'title' => $title ?: null,
+            'url'   => $url ?: null,
+        ];
+    }
+
     private function getEventCardContent(array $event, string $modify): array
     {
         if (empty($event['competitionId']) && !empty($event['competition']['id'])) {
@@ -566,6 +716,9 @@ class CatalogController
             'filters' => $this->getFilters(),
             'events' => $events,
             'pinned_leagues' => $this->getPinnedLeagues(), 
+            'pinned_icon'    => sprintf('%s/images/content/pinn-icon.svg', SGWPLUGIN_URL_FRONT),
+            'arrow_icon'    => sprintf('%s/images/content/arrow-icon-up.svg', SGWPLUGIN_URL_FRONT),
+            'arrow_icon_white'    => sprintf('%s/images/content/arrow-icon-white.svg', SGWPLUGIN_URL_FRONT),
         ];
 
         if (empty($events)) {

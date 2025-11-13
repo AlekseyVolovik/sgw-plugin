@@ -1,44 +1,87 @@
-<div class="sgw-calendar-dropdown" data-dropdown>
-	<div class="sgw-calendar-dropdown__toggle" data-dropdown-toggle>
-		{% if calendar|length > 0 %}
-			<img src="{{ calendar[0].icon }}" alt="Calendar Icon" class="sgw-calendar-dropdown__icon" />
-		{% endif %}
-		<span class="sgw-calendar-dropdown__label">
-			{% for item in calendar %}
-				{% if item.active %}
-					{{ item.date }} {{ item.month }} ({{ item.day }})
-				{% endif %}
-			{% endfor %}
-		</span>
-	</div>
+<div class="sgw-calendar-nav">
+  {% if calendar|length > 0 %}
+    <button
+      class="sgw-calendar-arrow sgw-calendar-arrow--prev"
+      type="button"
+      aria-label="Previous date"
+    >
+      <img src="{{ calendar[0].arrow_icon }}" alt="Prev">
+    </button>
+  {% endif %}
 
-	<ul class="sgw-calendar-dropdown__menu" data-dropdown-menu>
-		{% for item in calendar %}
-			<li class="sgw-calendar-dropdown__item {% if item.active %}is-active{% endif %}">
-				<a href="{{ item.url }}">{{ item.date }} {{ item.month }} ({{ item.day }})</a>
-			</li>
-		{% endfor %}
-	</ul>
+  <div class="sgw-calendar-dropdown" data-dropdown>
+    <div class="sgw-calendar-dropdown__toggle" data-dropdown-toggle>
+      {% if calendar|length > 0 %}
+        <img src="{{ calendar[0].icon }}" alt="Calendar Icon" class="sgw-calendar-dropdown__icon">
+      {% endif %}
+      <span class="sgw-calendar-dropdown__label">
+        {% for item in calendar %}
+          {% if item.active %}
+            {{ item.label }}
+          {% endif %}
+        {% endfor %}
+      </span>
+    </div>
+
+    <ul class="sgw-calendar-dropdown__menu" data-dropdown-menu>
+      {% for item in calendar %}
+        <li class="sgw-calendar-dropdown__item {% if item.active %}is-active{% endif %}">
+          <a href="{{ item.url }}">{{ item.label }}</a>
+        </li>
+      {% endfor %}
+    </ul>
+  </div>
+
+  {% if calendar|length > 0 %}
+    <button
+      class="sgw-calendar-arrow sgw-calendar-arrow--next"
+      type="button"
+      aria-label="Next date"
+    >
+      <img src="{{ calendar[0].arrow_icon }}" alt="Next">
+    </button>
+  {% endif %}
 </div>
-
 
 <script>
 document.addEventListener("DOMContentLoaded", () => {
-	document.querySelectorAll("[data-dropdown]").forEach(dropdown => {
-		const toggle = dropdown.querySelector("[data-dropdown-toggle]");
-		const menu = dropdown.querySelector("[data-dropdown-menu]");
+  // Дропдауны
+  document.querySelectorAll("[data-dropdown]").forEach(dropdown => {
+    const toggle = dropdown.querySelector("[data-dropdown-toggle]");
+    const menu = dropdown.querySelector("[data-dropdown-menu]");
+    if (!toggle || !menu) return;
 
-		if (!toggle || !menu) return;
+    toggle.addEventListener("click", () => {
+      menu.style.display = (menu.style.display === "block") ? "none" : "block";
+    });
 
-		toggle.addEventListener("click", () => {
-			menu.style.display = menu.style.display === "block" ? "none" : "block";
-		});
+    document.addEventListener("click", e => {
+      if (!dropdown.contains(e.target)) {
+        menu.style.display = "none";
+      }
+    });
+  });
 
-		document.addEventListener("click", e => {
-			if (!dropdown.contains(e.target)) {
-				menu.style.display = "none";
-			}
-		});
-	});
+  // Стрелки навигации
+  document.querySelectorAll(".sgw-calendar-nav").forEach(nav => {
+    const menu = nav.querySelector("[data-dropdown-menu]");
+    const prevBtn = nav.querySelector(".sgw-calendar-arrow--prev");
+    const nextBtn = nav.querySelector(".sgw-calendar-arrow--next");
+    if (!menu) return;
+
+    const go = (dir) => {
+      const active = menu.querySelector(".sgw-calendar-dropdown__item.is-active");
+      if (!active) return;
+      const target = (dir === -1) ? active.previousElementSibling : active.nextElementSibling;
+      if (!target) return;
+      const link = target.querySelector("a");
+      if (link && link.href) {
+        window.location.href = link.href;
+      }
+    };
+
+    if (prevBtn) prevBtn.addEventListener("click", () => go(-1));
+    if (nextBtn) nextBtn.addEventListener("click", () => go(1));
+  });
 });
 </script>
