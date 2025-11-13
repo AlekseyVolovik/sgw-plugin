@@ -1,14 +1,25 @@
 <?php declare(strict_types=1);
 
 use SGWPlugin\Controllers\LeaguePageController;
+use SGWPlugin\Classes\ThemeHeader;
+use SGWPlugin\Classes\ThemeFooter;
+use SGWPlugin\Classes\MetaBuilder;
 
 global $params;
 
-// ВАЖНО: вызываем ДО get_header()
 $controller = new LeaguePageController($params);
 $content = $controller->render();
 
-get_header(); ?>
+$title       = method_exists(MetaBuilder::class, 'getTitle') ? MetaBuilder::getTitle() : '';
+$description = method_exists(MetaBuilder::class, 'getDescription') ? MetaBuilder::getDescription() : '';
+$canonical   = $params['canonical'] ?? ($GLOBALS['sgw_canonical'] ?? null);
+
+ThemeHeader::render([
+    'title'       => $title,
+    'canonical'   => $canonical,
+    'description' => $description,
+]);
+?>
 
 <div class="sgw-wrapper" data-prefix="single_page">
     <div class="ct-container-full" data-content="normal">
@@ -20,4 +31,4 @@ get_header(); ?>
     </div>
 </div>
 
-<?php get_footer(); ?>
+<?php ThemeFooter::render(); ?>
