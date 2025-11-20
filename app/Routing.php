@@ -11,6 +11,7 @@ class Routing
 {
     private bool $isEnableMatchcenter;
     private ?string $baseUrlCatalog;
+    private bool $isEnableMatchPages;
 
     public function __construct()
     {
@@ -20,6 +21,25 @@ class Routing
     public function init(): void {
         $this->isEnableMatchcenter = Fields::get_general_enable_matchcenter();
         $this->baseUrlCatalog = Fields::get_general_url_catalog_page();
+        $this->isEnableMatchPages  = \SGWPlugin\Classes\Fields::get_general_enable_match_pages();
+
+        // Показ страницы 404 при отключении страниц матчей
+        add_action('template_redirect', function () {
+            if (!$this->baseUrlCatalog) return;
+
+            if (!\SGWPlugin\Classes\Fields::get_general_enable_match_pages()) {
+                $req = $_SERVER['REQUEST_URI'] ?? '';
+                $prefix = '/' . trim($this->baseUrlCatalog, '/') . '/match/';
+                if (stripos($req, $prefix) === 0) {
+                    global $wp_query;
+                    $wp_query->set_404();
+                    status_header(404);
+                    nocache_headers();
+                    include get_404_template();
+                    exit;
+                }
+            }
+        });
 
         if (!$this->isEnableMatchcenter || !$this->baseUrlCatalog) return;
 
@@ -29,7 +49,10 @@ class Routing
         // Тестовая страница: /football/test
         $this->addRoute("[$this->baseUrlCatalog:entry]/test", SGWPLUGIN_PATH_TEMPLATES . '/test-events.php');
 
-        $this->addRoute("[$this->baseUrlCatalog:entry]/match/[:slug]", SGWPLUGIN_PATH_TEMPLATES . '/match-view.php');
+        // Cтраница матча: /match/...
+        if ($this->isEnableMatchPages) {
+            $this->addRoute("[$this->baseUrlCatalog:entry]/match/[:slug]", SGWPLUGIN_PATH_TEMPLATES . '/match-view.php');
+        }
 
         // Вкладки-периоды: /football/today, /football/yesterday, /football/tomorrow
         $this->addRoute("[$this->baseUrlCatalog:entry]/[today|tomorrow|yesterday:period]", SGWPLUGIN_PATH_TEMPLATES . '/catalog.php');

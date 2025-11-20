@@ -6,6 +6,10 @@ class MatchUrl
 {
     public static function build(array $event): ?string
     {
+        if (!Fields::get_general_enable_match_pages()) {
+            return null;
+        }
+
         $base = '/football/match/';
 
         // 1) Каноника: если есть сегмент от API — используем его как есть

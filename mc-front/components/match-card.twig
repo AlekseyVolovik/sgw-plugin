@@ -1,82 +1,75 @@
-<a href="{{ match_card.url }}" class="sgw-match-card{% if match_card.badge is defined and match_card.badge|lower == 'live' %} sgw-match-card--live{% endif %}">
+{% set is_clickable = match_card.url is defined and match_card.url %}
 
-    <div class="sgw-match-card__schedule">
-        {% if match_card.badge|lower == 'live' %}
-            {% set live = match_card.live_minute ?? 'Live' %}
-            {% set last = live|slice(-1) %}
-            {% set base = live|slice(0, live|length - 1) %}
-            {% if last in ["’","'"] %}
-            <span class="sgw-schedule__live" aria-label="Live minute">
-                {{ base }}<span class="sgw-blink" aria-hidden="true">{{ last }}</span>
-            </span>
-            {% else %}
-            <span class="sgw-schedule__live">{{ live }}</span>
-            {% endif %}
-        {% elseif match_card.date_iso %}
-            <time datetime="{{ match_card.date_iso }}" class="sgw-schedule__time">
-                {{ match_card.date }} {{ match_card.time }}
-            </time>
-        {% elseif match_card.meta_note %}
-            <span class="sgw-schedule__note">{{ match_card.meta_note }}</span>
-        {% endif %}
-    </div>
+{% if is_clickable %}
+    <a href="{{ match_card.url }}" class="sgw-match-card{% if match_card.badge is defined and match_card.badge|lower == 'live' %} sgw-match-card--live{% endif %}">
+{% else %}
+    <div class="sgw-match-card sgw-match-card--disabled{% if match_card.badge is defined and match_card.badge|lower == 'live' %} sgw-match-card--live{% endif %}" role="group" aria-disabled="true" tabindex="0">
+{% endif %}
 
-    {# {% if match_card.title or match_card.badge %}
-        <div class="sgw-match-card__status">
-            {% if match_card.badge %}
-                <span class="sgw-badge sgw-badge_{{ match_card.badge | lower }}">
-                    {% if match_card.badge|lower == 'live' %}
-                        <span class="badge-icon" aria-hidden="true">🔴</span>
-                    {% elseif match_card.badge|lower == 'upcoming' %}
-                        <span class="badge-icon" aria-hidden="true">📅</span>
-                    {% elseif match_card.badge|lower == 'finished' %}
-                        <span class="badge-icon" aria-hidden="true">🏁</span>
-                    {% endif %}
-                    <span class="badge-text">{{ match_card.badge }}</span>
+        <div class="sgw-match-card__schedule">
+            {% if match_card.badge|lower == 'live' %}
+                {% set live = match_card.live_minute ?? 'Live' %}
+                {% set last = live|slice(-1) %}
+                {% set base = live|slice(0, live|length - 1) %}
+                {% if last in ["’","'"] %}
+                <span class="sgw-schedule__live" aria-label="Live minute">
+                    {{ base }}<span class="sgw-blink" aria-hidden="true">{{ last }}</span>
                 </span>
+                {% else %}
+                <span class="sgw-schedule__live">{{ live }}</span>
+                {% endif %}
+            {% elseif match_card.date_iso %}
+                <time datetime="{{ match_card.date_iso }}" class="sgw-schedule__time">
+                    {{ match_card.date }} {{ match_card.time }}
+                </time>
+            {% elseif match_card.meta_note %}
+                <span class="sgw-schedule__note">{{ match_card.meta_note }}</span>
             {% endif %}
         </div>
-    {% endif %} #}
 
-    {% if match_card.teams or (match_card.date and match_card.time) %}
+        {% if match_card.teams or (match_card.date and match_card.time) %}
 
-        <div class="sgw-match-card__teams-wrapper">
-            {% if match_card.teams %}
-                <div class="sgw-match-card__teams">
-                    <div class="sgw-match-card__team">
-                        {% if match_card.teams[0].logo %}
-                            <img src="{{ match_card.teams[0].logo }}" alt="{{ match_card.teams[0].name }}" class="sgw-team__logo">
-                        {% endif %}
-                        <span class="sgw-team__name">{{ match_card.teams[0].name }}</span>
+            <div class="sgw-match-card__teams-wrapper">
+                {% if match_card.teams %}
+                    <div class="sgw-match-card__teams">
+                        <div class="sgw-match-card__team">
+                            {% if match_card.teams[0].logo %}
+                                <img src="{{ match_card.teams[0].logo }}" alt="{{ match_card.teams[0].name }}" class="sgw-team__logo">
+                            {% endif %}
+                            <span class="sgw-team__name">{{ match_card.teams[0].name }}</span>
+                        </div>
+
+                        <div class="sgw-match-card__team">
+                            {% if match_card.teams[1].logo %}
+                                <img src="{{ match_card.teams[1].logo }}" alt="{{ match_card.teams[1].name }}" class="sgw-team__logo">
+                            {% endif %}
+                            <span class="sgw-team__name">{{ match_card.teams[1].name }}</span>
+                        </div>
                     </div>
+                {% endif %}
+            </div>
 
-                    <div class="sgw-match-card__team">
-                        {% if match_card.teams[1].logo %}
-                            <img src="{{ match_card.teams[1].logo }}" alt="{{ match_card.teams[1].name }}" class="sgw-team__logo">
-                        {% endif %}
-                        <span class="sgw-team__name">{{ match_card.teams[1].name }}</span>
-                    </div>
-                </div>
-            {% endif %}
-        </div>
+            <div class="sgw-match-card__score">
+                {% if match_card.teams 
+                    and match_card.teams[0].score is defined 
+                    and match_card.teams[1].score is defined
+                    and match_card.badge|lower in ['live','finished'] %}
+                    <span>{{ match_card.teams[0].score }}</span>
+                    <span>{{ match_card.teams[1].score }}</span>
 
-        <div class="sgw-match-card__score">
-            {% if match_card.teams 
-                and match_card.teams[0].score is defined 
-                and match_card.teams[1].score is defined
-                and match_card.badge|lower in ['live','finished'] %}
-                <span>{{ match_card.teams[0].score }}</span>
-                <span>{{ match_card.teams[1].score }}</span>
+                {% elseif match_card.badge|lower == 'upcoming' %}
+                    <span>-</span>
+                    <span>-</span>
 
-            {% elseif match_card.badge|lower == 'upcoming' %}
-                <span>-</span>
-                <span>-</span>
+                {% elseif match_card.time %}
+                    <span class="sgw-match-card__time">{{ match_card.time }}</span>
+                {% endif %}
+            </div>
 
-            {% elseif match_card.time %}
-                <span class="sgw-match-card__time">{{ match_card.time }}</span>
-            {% endif %}
-        </div>
+        {% endif %}
 
-    {% endif %}
-
-</a>
+{% if is_clickable %}
+    </a>
+{% else %}
+    </div>
+{% endif %}

@@ -19,6 +19,38 @@ class Admin
         add_filter('acf/settings/save_json/key=group_6830864c1fde5', [$this, 'saveFields']);
         add_filter('acf/settings/load_json', [$this, 'loadFields']);
         add_action('admin_init', [$this, 'addMetaboxes']);
+        add_action('acf/init', [$this, 'registerRoutingToggle']);
+    }
+
+    public function registerRoutingToggle(): void
+    {
+        if (!function_exists('acf_add_local_field_group')) return;
+
+        acf_add_local_field_group([
+            'key' => 'group_sgw_routing',
+            'title' => 'SGW › Routing',
+            'menu_order' => 20,
+            'fields' => [
+                [
+                    'key' => 'field_sgw_enable_match_pages',
+                    'label' => 'Enable match pages',
+                    'name' => 'enable_match_pages',
+                    'type' => 'true_false',
+                    'default_value' => 1, // включено по умолчанию
+                    'ui' => 1,
+                    'instructions' => 'Если выключить — роут матча будет отключён, ссылки на матч не генерируются и карточки станут некликабельными.',
+                ],
+            ],
+            'location' => [
+                [
+                    [
+                        'param' => 'options_page',
+                        'operator' => '==',
+                        'value' => self::PAGE_SLUG,
+                    ],
+                ],
+            ],
+        ]);
     }
 
     public function addOptionsPage(): void
@@ -66,7 +98,11 @@ class Admin
         $updatesStatus = Environment::get("UPDATE_STATUS");
 
         echo $this->getBlock('General', [
-            ['title' => 'Routing', 'content' => $this->getMessage($routingStatus, $routingStatus ? 'enabled' : 'disabled')]
+            ['title' => 'Routing', 'content' => $this->getMessage($routingStatus, $routingStatus ? 'enabled' : 'disabled')],
+            ['title' => 'Match pages', 'content' => $this->getMessage(
+                \SGWPlugin\Classes\Fields::get_general_enable_match_pages(), 
+                \SGWPlugin\Classes\Fields::get_general_enable_match_pages() ? 'enabled' : 'disabled'
+            )],
         ]);
 
         echo $this->getBlock('SGW Client', [

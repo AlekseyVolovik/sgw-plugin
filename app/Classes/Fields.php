@@ -70,10 +70,14 @@ class Fields
     }
 
     public static function get_customize_pinned_league_ids(): array
-{
-    // имя формируется ACF автоматически: {group_name}_{subfield_name}
-    $ids = self::get_options_field('sgw_plugin_customize_pinned_league_ids');
-    return is_array($ids) ? array_values(array_map('intval', $ids)) : [];
-}
+    {
+        $ids = self::get_options_field('sgw_plugin_customize_pinned_league_ids');
+        return is_array($ids) ? array_values(array_map('intval', $ids)) : [];
+    }
 
+    public static function get_general_enable_match_pages(): bool
+    {
+        $v = function_exists('get_field') ? get_field('enable_match_pages', 'option') : null;
+        return (bool)$v;
+    }
 }
