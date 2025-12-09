@@ -3,7 +3,7 @@
 /**
  * Plugin Name:       SGW Plugin
  * Description:       Sportsgateway Plugin
- * Version:           1.1.17
+ * Version:           1.1.18
  * Author:            AM
  * Text Domain:       sgw-plugin
  * Domain Path:       /languages
@@ -104,15 +104,5 @@ final class SGWPluginMain {
     public function deactivate(): void { flush_rewrite_rules(); }
 }
 
-// === 4) ОБНОВЛЕНИЯ PUC (после констант/автолоадера) ===
-use YahnisElsts\PluginUpdateChecker\v5\PucFactory;
-if (class_exists(PucFactory::class)) {
-    PucFactory::buildUpdateChecker(
-        'https://github.com/AlekseyVolovik/sgw-plugin/',
-        SGWPLUGIN_FILE,
-        'sgw-plugin'
-    );
-}
-
-// === 5) ЗАПУСК ===
+// === 4) ЗАПУСК ===
 new SGWPluginMain();

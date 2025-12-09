@@ -19,22 +19,53 @@ class Utils
 
     public function autoupdate(): void
     {
-        if(!is_admin()) return;
+        // работаем только в админке
+        if (!is_admin()) {
+            return;
+        }
 
-        $gitRepo = Fields::get_updates_git_repository();
-        $gitToken = Fields::get_updates_git_token();
+        // если PUC не подключен — просто выходим
+        if (!class_exists(\YahnisElsts\PluginUpdateChecker\v5\PucFactory::class)) {
+            return;
+        }
 
+        // Читаем настройки из ACF
+        $gitRepo  = trim((string) Fields::get_updates_git_repository());
+        $gitToken = trim((string) Fields::get_updates_git_token());
+
+        // По умолчанию считаем, что соединения нет
         Environment::set('UPDATE_STATUS', false);
 
-        if (!$gitRepo || !$gitToken) return;
+        // Если репо не задано — вообще не настраиваем апдейтер
+        if ($gitRepo === '') {
+            return;
+        }
 
-        $update_checker = PucFactory::buildUpdateChecker($gitRepo, SGWPLUGIN_PATH_INDEX, 'sgw-plugin');
+        // Создаём апдейтер для текущего плагина
+        $update_checker = PucFactory::buildUpdateChecker(
+            $gitRepo,
+            SGWPLUGIN_FILE,  // <--- важно: путь к основному файлу плагина
+            'sgw-plugin'
+        );
+
+        // Используем релизный ZIP с GitHub Actions (.release-plugin.yml)
         $update_checker->getVcsApi()->enableReleaseAssets('/^sgw-plugin\.zip$/');
         $update_checker->setBranch('main');
-        $update_checker->setAuthentication($gitToken);
 
-        // TODO: Запрос жрет время загрузки, мб отказаться от него, или найти способ оптимизировать
-        Environment::set('UPDATE_STATUS', (bool)$update_checker->requestInfo());
+        // Токен опционален: если репо публичный, можно оставить пустым
+        if ($gitToken !== '') {
+            $update_checker->setAuthentication($gitToken);
+        }
+
+        // Чтобы не тормозить весь админ, проверяем соединение только на нашей странице настроек
+        if (isset($_GET['page']) && $_GET['page'] === Admin::PAGE_SLUG) {
+            try {
+                $info = $update_checker->requestInfo();
+                Environment::set('UPDATE_STATUS', (bool) $info);
+            } catch (\Throwable $e) {
+                Environment::set('UPDATE_STATUS', false);
+            }
+        }
     }
 
     public function sgwclient(): void
