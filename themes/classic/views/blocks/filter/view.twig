@@ -1,0 +1,4 @@
+{% include '@components/status-filters.twig' with { filters_status: filters_status } %}
+{% if calendar is not empty %}
+  {% include '@components/calendar.twig' with { calendar: calendar } %}
+{% endif %}

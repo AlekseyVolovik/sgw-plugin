@@ -98,8 +98,8 @@ class MatchPageController
         $match['info'] = $this->extractMatchInfo($details, $match);
 
         $breadcrumbs    = $this->buildBreadcrumbs($event, $match);
-        $bcArrowIcon    = sprintf('%s/images/content/arrow-icon-up.svg', SGWPLUGIN_URL_FRONT);
-        $bcFootballIcon = sprintf('%s/images/content/football-icon.svg', SGWPLUGIN_URL_FRONT);
+        $bcArrowIcon    = Helpers::frontAssetUrl('images/content/arrow-icon-up.svg');
+        $bcFootballIcon = Helpers::frontAssetUrl('images/content/football-icon.svg');
 
         // 4) MatchCentre (сырое событие — только для построения блоков)
         $mc        = $this->fetchMatchCentreEventRaw($event);
@@ -132,14 +132,14 @@ class MatchPageController
         $hlHalves    = $this->splitHighlightsByHalves($mcEvent);
 
         // Общие иконки
-        $pinnedIcon     = sprintf('%s/images/content/pinn-icon.svg', SGWPLUGIN_URL_FRONT);
-        $arrowIcon      = sprintf('%s/images/content/arrow-icon-up.svg', SGWPLUGIN_URL_FRONT);
-        $arrowIconWhite = sprintf('%s/images/content/arrow-icon-white.svg', SGWPLUGIN_URL_FRONT);
+        $pinnedIcon     = Helpers::frontAssetUrl('images/content/pinn-icon.svg');
+        $arrowIcon      = Helpers::frontAssetUrl('images/content/arrow-icon-up.svg');
+        $arrowIconWhite = Helpers::frontAssetUrl('images/content/arrow-icon-white.svg');
 
-        $iconGoal   = sprintf('%s/images/content/icon-goal.svg', SGWPLUGIN_URL_FRONT);
-        $iconYellow = sprintf('%s/images/content/icon-yellow-card.svg', SGWPLUGIN_URL_FRONT);
-        $iconRed    = sprintf('%s/images/content/icon-red-card.svg', SGWPLUGIN_URL_FRONT);
-        $iconSub    = sprintf('%s/images/content/substitution.svg', SGWPLUGIN_URL_FRONT);
+        $iconGoal   = Helpers::frontAssetUrl('images/content/icon-goal.svg');
+        $iconYellow = Helpers::frontAssetUrl('images/content/icon-yellow-card.svg');
+        $iconRed    = Helpers::frontAssetUrl('images/content/icon-red-card.svg');
+        $iconSub    = Helpers::frontAssetUrl('images/content/substitution.svg');
 
         // Формат filters как на каталоге/стране/лиге
         $filters = [
@@ -590,7 +590,7 @@ class MatchPageController
      */
     private function buildViewModel(array $e): array
     {
-        $defaultLogo = SGWPLUGIN_URL_FRONT . '/images/content/team-placeholder.png';
+        $defaultLogo = Helpers::frontAssetUrl('images/content/team-placeholder.png');
         $teams = [];
         for ($i = 0; $i < 2; $i++) {
             $t    = $e['competitors'][$i] ?? [];

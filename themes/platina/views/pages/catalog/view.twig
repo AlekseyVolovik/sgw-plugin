@@ -1,0 +1,174 @@
+<div class="sgw-plugin">
+	<div class="sgw-catalog">
+
+		<div class="sgw-catalog__sidebar">
+			{# Табы (мобильные) #}
+			<div class="sgw-sidebar-tabs">
+				<button class="sgw-sidebar-tab is-active" data-sidebar-tab="pinned">
+					Pinned Leagues
+				</button>
+				<button class="sgw-sidebar-tab" data-sidebar-tab="countries">
+					Countries
+				</button>
+			</div>
+
+			{# Панель "Pinned Leagues" #}
+			<div class="sgw-sidebar-panel is-active" data-sidebar-panel="pinned">
+				{% include '@blocks/pinned-leagues/pinned-leagues.twig' %}
+			</div>
+
+			{# Панель "Countries" #}
+			<div class="sgw-sidebar-panel" data-sidebar-panel="countries">
+				{% include '@blocks/filter/leagues-by-country.twig' with {
+					'filters_leagues_by_country': filters.leagues_by_country
+				} %}
+			</div>
+
+		</div>
+
+		<div class="sgw-sidebar-overlay" aria-hidden="true"></div>
+		<div class="sgw-catalog__content">
+			{% if filters %}
+				<div class="sgw-catalog__filters">
+					{% include '@blocks/filter/view.twig' with {
+						'filters_status': filters.combined,
+						'calendar': filters.calendar,
+					} %}
+				</div>
+			{% endif %}
+
+			{% if events %}
+				<div class="sgw-catalog__events">
+					{% for event in events %}
+						<div class="sgw-catalog__events-item is-open">
+							<div class="sgw-catalog__events-item-title-wrapper">
+								<div class="sgw-catalog__events-item-title">
+								<span class="event-title-league">
+									{% if event.title_country is defined %}
+										<span class="event-title-country">{{ event.title_country }}:</span>
+									{% endif %}
+									{% if event.title_league is defined %}
+										<span class="event-title-league-name">{{ event.title_league }}</span>
+									{% else %}
+									{# Fallback, если вдруг где-то ещё приходит только старая строка #}
+										{{ event.title_country_league }}
+									{% endif %}
+								</span>
+
+								{% if event.pin and (event.pin.id or event.pin.slug) %}
+									{# Кнопка-pin: данные в data-атрибутах, чтобы не ломать HTML #}
+									<button
+										class="sgw-pin-btn"
+										type="button"
+										title="Pin this league"
+										aria-label="Pin this league"
+										data-pin-id="{{ event.pin.id ?: '' }}"
+										data-pin-slug="{{ event.pin.slug ?: '' }}"
+										data-pin-title="{{ event.pin.title ?: event.title_country_league }}"
+										data-pin-url="{{ event.pin.url ?: '#' }}"
+									>
+									📌
+									</button>
+								{% endif %}
+								</div>
+
+								<button class="sgw-catalog__events-toggle is-active" type="button" aria-label="Toggle matches">
+									<img class="sgw-toggle-icon" src="{{ arrow_icon }}" alt="" width="18" height="18" loading="lazy" />
+								</button>
+							</div>
+							<div class="sgw-catalog__events-matchlist" style="display: block;">
+								{% include '@blocks/match-cards/view.twig' with {
+									'match_cards': event.match_cards
+								} %}
+							</div>
+						</div>
+					{% endfor %}
+				</div>
+			{% else %}
+				{% include '@components/no-matches.twig' with { no_matches_card: no_matches_card } %}
+			{% endif %}
+		</div>
+
+		{# фиксированная кнопка #}
+		<button class="sgw-sidebar-trigger" type="button" aria-label="Open countries and leagues">
+			Countries &amp; Leagues
+			<img class="sgw-sidebar-trigger-icon" src="{{ arrow_icon_white }}" alt="" width="20" height="20" loading="lazy" />
+		</button>
+	</div>
+</div>
+
+<script>
+    document.querySelectorAll('.sgw-catalog__events-toggle').forEach(toggle => {
+        toggle.addEventListener('click', () => {
+            const item = toggle.closest('.sgw-catalog__events-item');
+            const matchList = item.querySelector('.sgw-catalog__events-matchlist');
+
+            const isOpen = item.classList.contains('is-open');
+
+            if (isOpen) {
+                matchList.style.display = 'none';
+                item.classList.remove('is-open');
+                toggle.classList.remove('is-active');
+            } else {
+                matchList.style.display = 'block';
+                item.classList.add('is-open');
+                toggle.classList.add('is-active');
+            }
+        });
+    });
+</script>
+
+<script>
+(function () {
+  const body    = document.body;
+  const trigger = document.querySelector('.sgw-sidebar-trigger');
+  const sidebar = document.querySelector('.sgw-catalog__sidebar');
+  const overlay = document.querySelector('.sgw-sidebar-overlay');
+
+  if (!trigger || !sidebar || !overlay) return;
+
+  const open = () => body.classList.add('sgw-sidebar-open');
+  const close = () => body.classList.remove('sgw-sidebar-open');
+  const isOpen = () => body.classList.contains('sgw-sidebar-open');
+
+  // Открыть/закрыть по кнопке
+  trigger.addEventListener('click', () => {
+    isOpen() ? close() : open();
+  });
+
+  // Закрыть по клику на оверлей
+  overlay.addEventListener('click', close);
+
+  // Закрыть по Esc
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && isOpen()) close();
+  });
+
+  // Клик по ссылке внутри сайдбара — закрываем
+  sidebar.addEventListener('click', (e) => {
+    const a = e.target.closest('a');
+    if (a) close();
+  });
+})();
+
+(function () {
+	const tabs = document.querySelectorAll('.sgw-sidebar-tab');
+	const panels = document.querySelectorAll('.sgw-sidebar-panel');
+	if (!tabs.length || !panels.length) return;
+
+	tabs.forEach(tab => {
+	tab.addEventListener('click', () => {
+		const target = tab.dataset.sidebarTab;
+
+		tabs.forEach(t => t.classList.toggle('is-active', t === tab));
+		panels.forEach(p => {
+		const active = p.dataset.sidebarPanel === target;
+		p.classList.toggle('is-active', active);
+		});
+	});
+	});
+})();
+</script>
+
+
+

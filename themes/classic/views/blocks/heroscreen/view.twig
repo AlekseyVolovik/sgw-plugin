@@ -1,0 +1,70 @@
+<div class="ks-heroscreen-wrapper">
+    <div class="container">
+        <div class="ks-heroscreen">
+            {% if badge_league or badge %}
+                <div class="ks-heroscreen__badges">
+                    {% if badge_league %}
+                        <span class="ks-badge ks-badge_heroscreen">{{ badge_league }}</span>
+                    {% endif %}
+                    {% if badge %}
+                        <span class="ks-badge ks-badge_live">{{ badge }}</span>
+                    {% endif %}
+                </div>
+            {% endif %}
+            {% if title %}
+                <h1 class="ks-heroscreen__title">{{ title }}</h1>
+            {% endif %}
+            {% if venues %}
+                <div class="ks-heroscreen__venues">
+                    {% for venue in venues %}
+                        {% if venue.text %}
+                            <div class="ks-venue">
+                                {% if venue.icon %}
+                                    <span class="ks-venue__ico" style="background-image: {{ venue.icon }}"></span>
+                                {% endif %}
+                                <p class="ks-venue__text">{{ venue.text }}</p>
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            {% endif %}
+            {% if teams or date and time %}
+                <div class="ks-heroscreen__teams-wrapper">
+                    {% if teams %}
+                        <div class="ks-match-card__teams">
+                            {% for team in teams %}
+                                {% if team.name %}
+                                    <div class="ks-team">
+                                        {% if team.logo %}
+                                            <img src="{{ team.logo }}" alt="{{ team.name }}" class="ks-team__ico">
+                                        {% endif %}
+                                        {% if team.name %}
+                                            <div class="ks-team__text {% if badge | lower == 'result' %}ks-team__text_flex{% endif %}">
+                                                <p class="ks-team__name">{{ team.name }}</p>
+                                                {% if team.description %}
+                                                    <p class="ks-team__score">{{ team.description }}</p>
+                                                {% endif %}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                    {% if date and time %}
+                        <div class="ks-schedule">
+                            <time datetime="{{ date_atr }}" class="ks-schedule__date">{{ date }}</time>
+                            <time datetime="{{ time_atr }}" class="ks-schedule__time">{{ time }}</time>
+                        </div>
+                    {% endif %}
+                </div>
+            {% endif %}
+            {% if info %}
+                <p class="ks-heroscreen__info">{{ info }}</p>
+            {% endif %}
+            {% include '@components/odds.twig' with {
+                'odds': odds
+            } %}
+        </div>
+    </div>
+</div>

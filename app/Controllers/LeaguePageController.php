@@ -228,15 +228,15 @@ class LeaguePageController
         if ($active === 'live' && empty($matchCardsByStatus['live'])) {
             $active = !empty($matchCardsByStatus['upcoming']) ? 'upcoming' : 'finished';
         }
-
+ 
         $breadcrumbs     = $this->buildBreadcrumbs($league);
-        $bcArrowIcon     = sprintf('%s/images/content/arrow-icon-up.svg', SGWPLUGIN_URL_FRONT);
-        $bcFootballIcon  = sprintf('%s/images/content/football-icon.svg', SGWPLUGIN_URL_FRONT);
+        $bcArrowIcon     = Helpers::frontAssetUrl('images/content/arrow-icon-up.svg');
+        $bcFootballIcon  = Helpers::frontAssetUrl('images/content/football-icon.svg');
 
         // Иконки
-        $pinnedIcon      = sprintf('%s/images/content/pinn-icon.svg', SGWPLUGIN_URL_FRONT);
-        $arrowIcon       = sprintf('%s/images/content/arrow-icon-up.svg', SGWPLUGIN_URL_FRONT);
-        $arrowIconWhite  = sprintf('%s/images/content/arrow-icon-white.svg', SGWPLUGIN_URL_FRONT);
+        $pinnedIcon      = Helpers::frontAssetUrl('images/content/pinn-icon.svg');
+        $arrowIcon       = Helpers::frontAssetUrl('images/content/arrow-icon-up.svg');
+        $arrowIconWhite  = Helpers::frontAssetUrl('images/content/arrow-icon-white.svg');
 
         // Структура filters — как в CatalogController
         $filters = [

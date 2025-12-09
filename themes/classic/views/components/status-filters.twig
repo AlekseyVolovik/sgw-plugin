@@ -1,0 +1,13 @@
+{% if filters_status %}
+    <div class="sgw-filters__filter-status">
+        <ul class="sgw-filters__status-list">
+            {% for filter in filters_status %}
+                <li class="sgw-filters__status-item {% if filter.state == 'active' %}sgw-filters__status-item--active{% endif %} {% if filter.class %} sgw-filters__status-item--{{ filter.class }}{% endif %}">
+                    <a href="{{ filter.url }}" class="sgw-filters__status-link">
+                        {{ filter.title }}
+                    </a>
+                </li>
+            {% endfor %}
+        </ul>
+    </div>
+{% endif %}

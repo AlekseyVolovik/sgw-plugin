@@ -1,0 +1,5 @@
+<div class="sgw-match-cards">
+    {% for match_card in match_cards %}
+        {% include '@components/match-card.twig' with { match_card: match_card } %}
+    {% endfor %}
+</div>

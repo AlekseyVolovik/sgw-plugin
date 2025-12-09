@@ -1,0 +1,20 @@
+<div class="ks-table-wrapper">
+    {% include '@components/table.twig' with { tables: tables_halved } %}
+
+    {% include '@components/table.twig' with { tables: tables_1 } %}
+
+    {% include '@components/table.twig' with {
+        'tables': tables_2,
+        'view_class': 'fix-width'
+    } %}
+
+    {% include '@components/table.twig' with {
+        'tables': tables_3,
+        'view_class': 'no-dark-heading ks-table__table_fix-width'
+    } %}
+
+    {% include '@components/table.twig' with {
+        'tables': tables_4,
+        'view_class': 'no-secondary-line ks-table__table_fix-width'
+    } %}
+</div>

@@ -534,8 +534,8 @@ class CatalogController
             return [];
         }
 
-        $calendarIcon = sprintf('%s/images/content/calendar-icon.svg', SGWPLUGIN_URL_FRONT);
-        $arrowIcon    = sprintf('%s/images/content/arrow-icon-up.svg', SGWPLUGIN_URL_FRONT);
+        $calendarIcon = Helpers::frontAssetUrl('images/content/calendar-icon.svg');
+        $arrowIcon    = Helpers::frontAssetUrl('images/content/arrow-icon-up.svg');
 
         $today      = new \DateTimeImmutable('today');
         $todayStr   = $today->format('Y-m-d');
@@ -716,9 +716,9 @@ class CatalogController
             'filters' => $this->getFilters(),
             'events' => $events,
             'pinned_leagues' => $this->getPinnedLeagues(), 
-            'pinned_icon'    => sprintf('%s/images/content/pinn-icon.svg', SGWPLUGIN_URL_FRONT),
-            'arrow_icon'    => sprintf('%s/images/content/arrow-icon-up.svg', SGWPLUGIN_URL_FRONT),
-            'arrow_icon_white'    => sprintf('%s/images/content/arrow-icon-white.svg', SGWPLUGIN_URL_FRONT),
+            'pinned_icon'      => Helpers::frontAssetUrl('images/content/pinn-icon.svg'),
+            'arrow_icon'       => Helpers::frontAssetUrl('images/content/arrow-icon-up.svg'),
+            'arrow_icon_white' => Helpers::frontAssetUrl('images/content/arrow-icon-white.svg'),
         ];
 
         if (empty($events)) {

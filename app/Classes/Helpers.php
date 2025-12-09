@@ -183,4 +183,38 @@ class Helpers
 
         return trim($s, '-');
     }
+
+    public static function frontAssetUrl(string $relativePath): string
+    {
+        $relativePath = ltrim($relativePath, "/\\");
+
+        // 1) Если есть система тем плагина — сначала ищем файл в активной теме
+        if (class_exists(\SGWPlugin\Theme\ThemeManager::class)) {
+            // Внутри темы все ассеты лежат в front/...
+            // relativePath обычно вида "images/content/xxx.svg"
+            $themeRel = (strpos($relativePath, 'front/') === 0)
+                ? $relativePath
+                : 'front/' . $relativePath;
+
+            // Абсолютный путь к файлу темы
+            $themePath = \SGWPlugin\Theme\ThemeManager::templatePath($themeRel); 
+
+            if (is_file($themePath)) {
+                // assetUrl сам добавит префикс front/, если его нет
+                $assetRel = (strpos($relativePath, 'front/') === 0)
+                    ? substr($relativePath, strlen('front/'))
+                    : $relativePath;
+
+                return \SGWPlugin\Theme\ThemeManager::assetUrl($assetRel);
+            }
+        }
+
+        // 2) Фолбэк — старая статика из mc-front
+        if (defined('SGWPLUGIN_URL_FRONT')) {
+            return rtrim(SGWPLUGIN_URL_FRONT, '/') . '/' . $relativePath;
+        }
+
+        // На всякий случай — просто относительный путь
+        return $relativePath;
+    }
 }
